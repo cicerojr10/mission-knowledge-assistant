@@ -124,3 +124,19 @@ Use a pasta `docs/` para registrar aprendizado diario. O objetivo nao e apenas s
 - Semana 6: evals.
 - Semana 7: guardrails e seguranca.
 - Semana 8: custo, latencia, cache e documentacao final.
+
+## Dia 2 — Estrutura profissional do projeto
+
+Neste dia, a API foi reorganizada para uma estrutura mais próxima de um projeto real.
+
+### Mudanças realizadas
+
+- Separação da rota `/health` em `app/routes/health.py`
+- Criação de `app/config.py` para configurações da aplicação
+- Criação de `app/schemas.py` para contratos de dados
+- Ajuste do `app/main.py` para apenas montar a aplicação
+- Inclusão de `__init__.py` para deixar os pacotes explícitos
+
+### Por que isso importa?
+
+Em projetos reais, deixar todas as rotas e configurações dentro de um único arquivo dificulta manutenção. Separar responsabilidades ajuda o time a evoluir o sistema com mais clareza.

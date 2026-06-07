@@ -1,12 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class DocumentCreate(BaseModel):
-    title: str = Field(..., min_length=3, max_length=120)
-    content: str = Field(..., min_length=1)
-
-
-class DocumentResponse(BaseModel):
-    id: str
-    title: str
-    content: str
+class HealthResponse(BaseModel):
+    status: str
+    service: str
