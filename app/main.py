@@ -1,15 +1,14 @@
 from fastapi import FastAPI
 
+from app.routes.health import router as health_router
+from app.routes.documents import router as documents_router
+from app.config import settings
+
 app = FastAPI(
-    title="Mission Knowledge Assistant",
-    version="0.1.0",
-    description="API base para um assistente de IA aplicada com RAG."
+    title=settings.app_name,
+    version=settings.app_version,
+    description="API base para o projeto Mission Knowledge Assistant.",
 )
 
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "ok",
-        "service": "mission-knowledge-assistant"
-    }
+app.include_router(health_router)
+app.include_router(documents_router)
