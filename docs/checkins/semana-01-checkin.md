@@ -2,11 +2,31 @@
 
 ## Objetivo da semana
 
+<<<<<<< Updated upstream
 Construir a base profissional do projeto Mission Knowledge Assistant, preparando o caminho para uma aplicação de IA com LLMs, RAG, embeddings, guardrails e evals.
+=======
+- [x] Entendi o que e uma API.
+- [x] Entendi o papel do endpoint `/health`.
+- [x] Criei ambiente virtual.
+- [x] Instalei FastAPI e Uvicorn.
+- [x] Rodei a API localmente.
+- [x] Acessei `/docs`.
+- [x] Fiz commit.
+>>>>>>> Stashed changes
 
 ---
 
+<<<<<<< Updated upstream
 ## Dia 1 — API mínima com FastAPI
+=======
+- [x] Separei rotas em `app/routes`.
+- [x] Entendi o papel de router.
+- [x] Criei `config.py`.
+- [x] Criei `schemas.py`.
+- [x] Mantive `main.py` limpo.
+- [x] Atualizei README.
+- [x] Fiz commit.
+>>>>>>> Stashed changes
 
 - [x] Criar estrutura inicial do projeto
 - [x] Criar ambiente virtual Python
@@ -18,7 +38,16 @@ Construir a base profissional do projeto Mission Knowledge Assistant, preparando
 - [x] Criar README inicial
 - [x] Enviar para o GitHub
 
+<<<<<<< Updated upstream
 ### Aprendizado principal
+=======
+- [x] Criei repositorio remoto.
+- [x] Subi o projeto.
+- [x] Criei diario tecnico.
+- [x] Criei issues ou checklist.
+- [x] Fiz commits pequenos.
+- [x] Entendi por que GitHub mostra raciocinio tecnico.
+>>>>>>> Stashed changes
 
 Entendi que uma API é um contrato entre sistemas e que `/health` é usado para verificar se a aplicação está viva.
 
