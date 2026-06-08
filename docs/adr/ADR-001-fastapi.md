@@ -1,4 +1,4 @@
-# ADR-001 - Usar FastAPI como base da API
+# ADR-001 — Usar FastAPI como base da API
 
 ## Status
 
@@ -6,26 +6,57 @@ Aceita
 
 ## Contexto
 
-O projeto precisa de uma API simples, clara e evolutiva para servir como base de uma aplicacao de IA aplicada. Antes de implementar RAG, embeddings e evals, precisamos de um backend que receba requisicoes, valide dados e exponha endpoints documentados.
+O projeto Mission Knowledge Assistant precisa de uma API para receber requisições, expor endpoints e servir como base para funcionalidades futuras de IA aplicada, como ingestão de documentos, busca semântica, RAG, evals e guardrails.
 
-## Decisao
+Antes de implementar componentes de IA, é necessário ter uma base backend simples, clara e evolutiva.
 
-Usar FastAPI como framework inicial da API.
+## Decisão
+
+Usar FastAPI como framework principal da API.
 
 ## Motivos
 
-- E uma ferramenta moderna para APIs em Python.
-- Gera documentacao automatica em `/docs`.
-- Usa type hints e Pydantic para validacao.
-- Combina bem com projetos de IA, dados e automacao.
-- Permite evoluir para endpoints de documentos, busca, RAG e evals.
+- É uma ferramenta moderna para construção de APIs em Python.
+- Combina bem com projetos de IA, dados e automação.
+- Possui documentação automática em `/docs`.
+- Usa type hints e Pydantic para validação de dados.
+- Permite evoluir o projeto de forma organizada.
+
+## Alternativas consideradas
+
+### Flask
+
+Seria uma opção mais simples, mas exigiria mais configuração manual para documentação e validação.
+
+### Django
+
+É uma opção robusta, mas mais pesada para este momento do projeto.
+
+### Spring Boot com Java
+
+É forte no mercado corporativo, mas meu foco atual está em aplicações de IA com Python, LLMs, RAG e evals.
 
 ## Trade-offs
 
-- Para empresas Java, Spring Boot pode ser mais comum.
-- Para sistemas muito simples, Flask poderia ser suficiente.
-- FastAPI exige entender type hints, schemas e validacao.
+### Ganhos
 
-## Consequencias
+- Desenvolvimento rápido.
+- Boa integração com ecossistema Python.
+- Documentação automática.
+- Boa base para APIs de IA aplicada.
 
-O projeto fica alinhado com a trilha de Engenheiro de Aplicacoes de IA, mantendo Python como stack principal e permitindo integracao futura com embeddings, bancos vetoriais e LLMs.
+### Perdas
+
+- Em algumas empresas Java, Spring Boot pode ser mais comum.
+- Exige cuidado para manter boa organização conforme o projeto cresce.
+
+## Consequências
+
+A escolha do FastAPI facilita a evolução para funcionalidades como:
+
+- ingestão de documentos;
+- endpoints de busca;
+- integração com LLMs;
+- criação de evals;
+- APIs para RAG;
+- validação de entradas e saídas.

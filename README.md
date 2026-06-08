@@ -1,23 +1,27 @@
 # Mission Knowledge Assistant
 
-Projeto de estudo e portfolio para a trilha de **Engenheiro de Aplicacoes de IA (LLM)**.
+Projeto de estudo e portfólio para a trilha de **Engenheiro de Aplicações de IA (LLM)**.
 
 ## Objetivo
 
-Construir, passo a passo, uma aplicacao de IA aplicada baseada em API, documentos, RAG, embeddings, guardrails, evals, seguranca e preocupacao com producao.
+Construir, passo a passo, uma aplicação de IA aplicada baseada em API, documentos, RAG, embeddings, guardrails, evals, segurança e preocupação com produção.
 
-Na Semana 1, o foco e a base profissional:
+Este projeto funciona como laboratório prático para aprender a transformar IA generativa em uma aplicação real, com backend, documentação, testes, decisões técnicas e evolução incremental.
 
-- FastAPI
-- rotas HTTP
-- estrutura de projeto
-- GitHub como diario de engenharia
-- endpoint de documentos em memoria
-- logs
-- tratamento de erro
-- testes automatizados
-- Docker inicial
-- ADRs
+## Foco da Semana 1
+
+Na Semana 1, o foco é criar a base profissional do projeto:
+
+* FastAPI
+* rotas HTTP
+* estrutura de projeto
+* GitHub como diário de engenharia
+* endpoint de documentos em memória
+* logs
+* tratamento de erro
+* testes automatizados
+* Docker inicial
+* ADRs
 
 ## Como rodar localmente
 
@@ -47,7 +51,7 @@ http://127.0.0.1:8000/docs
 
 ### GET /health
 
-Verifica se a API esta viva.
+Verifica se a API está viva.
 
 Exemplo de resposta:
 
@@ -60,7 +64,7 @@ Exemplo de resposta:
 
 ### POST /documents
 
-Cadastra um documento em memoria.
+Cadastra um documento em memória.
 
 Exemplo de request:
 
@@ -73,7 +77,7 @@ Exemplo de request:
 
 ### GET /documents
 
-Lista documentos cadastrados em memoria.
+Lista documentos cadastrados em memória.
 
 ## Rodar testes
 
@@ -102,6 +106,7 @@ tests/
   test_health.py
   test_documents.py
 docs/
+  diario-tecnico.md
   semana-01-guia.md
   diario-tecnico-template.md
   adr/
@@ -111,16 +116,28 @@ docs/
     semana-01-checkin.md
 ```
 
-## Diario tecnico
+## Diário de engenharia
 
-Use a pasta `docs/` para registrar aprendizado diario. O objetivo nao e apenas salvar codigo, mas criar evidencia do seu raciocinio tecnico.
+Este projeto também funciona como um registro público de aprendizado técnico.
 
-## Proximas semanas
+A pasta `docs/` contém materiais que mostram a evolução do projeto:
 
-- Semana 2: PostgreSQL, Docker Compose, persistencia e inicio de modelagem.
-- Semana 3: chunking e ingestao de documentos.
-- Semana 4: embeddings, pgvector e busca vetorial.
-- Semana 5: RAG com LLM.
-- Semana 6: evals.
-- Semana 7: guardrails e seguranca.
-- Semana 8: custo, latencia, cache e documentacao final.
+* `docs/diario-tecnico.md`: registro dos aprendizados diários.
+* `docs/checkins/semana-01-checkin.md`: checklist de progresso da semana.
+* `docs/adr/`: decisões arquiteturais registradas.
+
+## Por que isso importa?
+
+Além de construir código, este projeto documenta decisões técnicas, erros, aprendizados e a relação entre cada etapa do projeto e o dia a dia real de trabalho.
+
+Essa prática ajuda a desenvolver raciocínio de engenharia, clareza de comunicação e capacidade de manutenção de projetos.
+
+## Próximas semanas
+
+* Semana 2: PostgreSQL, Docker Compose, persistência e início de modelagem.
+* Semana 3: chunking e ingestão de documentos.
+* Semana 4: embeddings, pgvector e busca vetorial.
+* Semana 5: RAG com LLM.
+* Semana 6: evals.
+* Semana 7: guardrails e segurança.
+* Semana 8: custo, latência, cache e documentação final.

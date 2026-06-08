@@ -1,69 +1,95 @@
-# Check-ins da Semana 1
+# Check-in — Semana 1
 
-## Dia 1 - API minima e /health
+## Objetivo da semana
 
-- [ ] Entendi o que e uma API.
-- [ ] Entendi o papel do endpoint `/health`.
-- [ ] Criei ambiente virtual.
-- [ ] Instalei FastAPI e Uvicorn.
-- [ ] Rodei a API localmente.
-- [ ] Acessei `/docs`.
-- [ ] Fiz commit.
+Construir a base profissional do projeto Mission Knowledge Assistant, preparando o caminho para uma aplicação de IA com LLMs, RAG, embeddings, guardrails e evals.
 
-## Dia 2 - Estrutura profissional
+---
 
-- [ ] Separei rotas em `app/routes`.
-- [ ] Entendi o papel de router.
-- [ ] Criei `config.py`.
-- [ ] Criei `schemas.py`.
-- [ ] Mantive `main.py` limpo.
-- [ ] Atualizei README.
-- [ ] Fiz commit.
+## Dia 1 — API mínima com FastAPI
 
-## Dia 3 - GitHub como diario de engenharia
+- [x] Criar estrutura inicial do projeto
+- [x] Criar ambiente virtual Python
+- [x] Instalar FastAPI e Uvicorn
+- [x] Criar endpoint `GET /health`
+- [x] Rodar API localmente
+- [x] Testar `/health`
+- [x] Testar `/docs`
+- [x] Criar README inicial
+- [x] Enviar para o GitHub
 
-- [ ] Criei repositorio remoto.
-- [ ] Subi o projeto.
-- [ ] Criei diario tecnico.
-- [ ] Criei issues ou checklist.
-- [ ] Fiz commits pequenos.
-- [ ] Entendi por que GitHub mostra raciocinio tecnico.
+### Aprendizado principal
 
-## Dia 4 - Endpoint de documentos
+Entendi que uma API é um contrato entre sistemas e que `/health` é usado para verificar se a aplicação está viva.
 
-- [ ] Entendi GET vs POST.
-- [ ] Criei schema de entrada.
-- [ ] Criei schema de resposta.
-- [ ] Implementei `POST /documents`.
-- [ ] Implementei `GET /documents`.
-- [ ] Testei no `/docs`.
-- [ ] Atualizei README.
+---
 
-## Dia 5 - Configuracao, logs e erros
+## Dia 2 — Estrutura profissional do projeto
 
-- [ ] Criei `.env.example`.
-- [ ] Entendi variaveis de ambiente.
-- [ ] Entendi tratamento de erro HTTP.
-- [ ] Validei conteudo vazio.
-- [ ] Adicionei ou revisei logs.
-- [ ] Atualizei README.
+- [x] Criar ou revisar `app/config.py`
+- [x] Criar ou revisar `app/schemas.py`
+- [x] Separar rota de health em `app/routes/health.py`
+- [x] Manter `main.py` mais limpo
+- [x] Testar `/health`
+- [x] Testar `/docs`
+- [x] Atualizar README
+- [x] Fazer commit
 
-## Dia 6 - Testes automatizados
+### Aprendizado principal
 
-- [ ] Instalei pytest.
-- [ ] Criei teste para `/health`.
-- [ ] Criei teste para `/documents`.
-- [ ] Rodei `pytest`.
-- [ ] Entendi assert.
-- [ ] Corrigi erros.
-- [ ] Fiz commit.
+Entendi a importância de separar responsabilidades no projeto para facilitar manutenção e evolução.
 
-## Dia 7 - Docker e ADR
+---
 
-- [ ] Criei Dockerfile.
-- [ ] Criei `.dockerignore`.
-- [ ] Fiz build da imagem.
-- [ ] Rodei container local.
-- [ ] Criei ADR-001.
-- [ ] Revisei README.
-- [ ] Fiz revisao final da semana.
+## Dia 3 — GitHub como diário de engenharia
+
+- [x] Criar pasta `docs/`
+- [x] Criar `docs/diario-tecnico.md`
+- [x] Criar `docs/checkins/semana-01-checkin.md`
+- [x] Criar pasta `docs/adr/`
+- [x] Criar template de ADR
+- [x] Atualizar README
+- [ ] Fazer commit
+- [ ] Enviar para o GitHub
+
+### Aprendizado principal
+
+Ainda vou preencher ao final do dia.
+
+---
+
+## Dia 4 — Endpoint de documentos
+
+- [ ] Criar schema `DocumentCreate`
+- [ ] Criar schema `DocumentResponse`
+- [ ] Criar `POST /documents`
+- [ ] Criar `GET /documents`
+- [ ] Testar no `/docs`
+
+---
+
+## Dia 5 — Configuração, logs e erros
+
+- [ ] Criar `.env.example`
+- [ ] Melhorar configurações
+- [ ] Tratar erros básicos
+- [ ] Padronizar mensagens
+
+---
+
+## Dia 6 — Testes automatizados
+
+- [ ] Instalar pytest
+- [ ] Criar teste para `/health`
+- [ ] Criar teste para `/documents`
+- [ ] Rodar testes
+
+---
+
+## Dia 7 — Docker e revisão
+
+- [ ] Criar Dockerfile
+- [ ] Criar `.dockerignore`
+- [ ] Rodar aplicação com Docker
+- [ ] Criar ADR-001
+- [ ] Revisar README
