@@ -6,14 +6,21 @@ from app.schemas import DocumentCreate, DocumentResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-# Armazenamento em memoria apenas para a Semana 1.
-# Na Semana 2, isso sera substituido por PostgreSQL.
+# Armazenamento em memória apenas para a Semana 1.
+# Na Semana 2, isso será substituído por PostgreSQL.
 _DOCUMENTS: list[DocumentResponse] = []
 
 
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 def create_document(payload: DocumentCreate):
+    clean_title = payload.title.strip()
     clean_content = payload.content.strip()
+
+    if not clean_title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document title cannot be empty.",
+        )
 
     if not clean_content:
         raise HTTPException(
@@ -23,10 +30,12 @@ def create_document(payload: DocumentCreate):
 
     document = DocumentResponse(
         id=str(uuid4()),
-        title=payload.title.strip(),
+        title=clean_title,
         content=clean_content,
     )
+
     _DOCUMENTS.append(document)
+
     return document
 
 

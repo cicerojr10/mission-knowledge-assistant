@@ -8,6 +8,15 @@ Data:
 Tempo estudado:
 Energia de 1 a 5:
 
+
+## Dia 4 — Endpoint de documentos com Pydantic
+
+Hoje criei os endpoints `POST /documents` e `GET /documents`.
+
+Aprendi que schemas com Pydantic funcionam como contratos de entrada e saída da API.
+
+Também entendi que esse endpoint é o primeiro passo para o fluxo futuro de RAG, porque antes de criar chunks, embeddings e busca vetorial, a aplicação precisa receber documentos.
+
 ### Conceito estudado
 
 
