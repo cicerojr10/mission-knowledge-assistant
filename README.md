@@ -70,6 +70,15 @@ Exemplo de request:
   "content": "Artemis is a NASA program focused on returning humans to the Moon."
 }
 ```
+Exemplo de response:
+
+```json
+{
+  "id": "uuid-gerado",
+  "title": "Artemis Mission Overview",
+  "content": "Artemis is a NASA program focused on returning humans to the Moon."
+}
+```
 
 ### GET /documents
 

@@ -2,42 +2,42 @@
 
 ## Dia 1 - API minima e /health
 
-- [ ] Entendi o que e uma API.
-- [ ] Entendi o papel do endpoint `/health`.
-- [ ] Criei ambiente virtual.
-- [ ] Instalei FastAPI e Uvicorn.
-- [ ] Rodei a API localmente.
-- [ ] Acessei `/docs`.
-- [ ] Fiz commit.
+- [x] Entendi o que e uma API.
+- [x] Entendi o papel do endpoint `/health`.
+- [x] Criei ambiente virtual.
+- [x] Instalei FastAPI e Uvicorn.
+- [x] Rodei a API localmente.
+- [x] Acessei `/docs`.
+- [x] Fiz commit.
 
 ## Dia 2 - Estrutura profissional
 
-- [ ] Separei rotas em `app/routes`.
-- [ ] Entendi o papel de router.
-- [ ] Criei `config.py`.
-- [ ] Criei `schemas.py`.
-- [ ] Mantive `main.py` limpo.
-- [ ] Atualizei README.
-- [ ] Fiz commit.
+- [x] Separei rotas em `app/routes`.
+- [x] Entendi o papel de router.
+- [x] Criei `config.py`.
+- [x] Criei `schemas.py`.
+- [x] Mantive `main.py` limpo.
+- [x] Atualizei README.
+- [x] Fiz commit.
 
 ## Dia 3 - GitHub como diario de engenharia
 
-- [ ] Criei repositorio remoto.
-- [ ] Subi o projeto.
-- [ ] Criei diario tecnico.
-- [ ] Criei issues ou checklist.
-- [ ] Fiz commits pequenos.
-- [ ] Entendi por que GitHub mostra raciocinio tecnico.
+- [x] Criei repositorio remoto.
+- [x] Subi o projeto.
+- [x] Criei diario tecnico.
+- [x] Criei issues ou checklist.
+- [x] Fiz commits pequenos.
+- [x] Entendi por que GitHub mostra raciocinio tecnico.
 
 ## Dia 4 - Endpoint de documentos
 
-- [ ] Entendi GET vs POST.
-- [ ] Criei schema de entrada.
-- [ ] Criei schema de resposta.
-- [ ] Implementei `POST /documents`.
-- [ ] Implementei `GET /documents`.
-- [ ] Testei no `/docs`.
-- [ ] Atualizei README.
+- [x] Entendi GET vs POST.
+- [x] Criei schema de entrada.
+- [x] Criei schema de resposta.
+- [x] Implementei `POST /documents`.
+- [x] Implementei `GET /documents`.
+- [x] Testei no `/docs`.
+- [x] Atualizei README.
 
 ## Dia 5 - Configuracao, logs e erros
 
