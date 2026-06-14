@@ -625,3 +625,24 @@ add automated tests and fix document validation
 ### Próximo passo
 
 Preparar o projeto para Docker no Dia 7, fechando a base da Semana 1.
+
+Também encontrei um erro ao tentar rodar o container:
+
+```text
+exec: "uvicorn": executable file not found in $PATH
+
+Isso aconteceu porque o container não usa a .venv local. Ele instala apenas o que está declarado no requirements.txt.
+
+Corrigi instalando uvicorn[standard], atualizando o requirements.txt e alterando o CMD do Dockerfile para usar:
+
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+Esse registro é bom porque mostra aprendizado real.
+
+## 6. Commit do Dia 7
+
+Depois de revisar, rode:
+
+```powershell
+git add .
+git commit -m "add Docker support and complete week 1 review"

@@ -1,0 +1,1 @@
+Embeddings são representações numéricas de texto em forma de vetores. Textos com significados parecidos ficam próximos nesse espaço vetorial. Na ingestão de um sistema RAG, cada chunk é transformado em um embedding e armazenado. Na hora da busca, a pergunta do usuário também vira embedding e comparamos a similaridade para encontrar os chunks mais relevantes.

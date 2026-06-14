@@ -1,0 +1,1 @@
+Chunking é o processo de quebrar um documento grande em pedaços menores chamados chunks. Cada chunk precisa ser pequeno o suficiente para caber no contexto do modelo, mas grande o suficiente para manter sentido. Um detalhe importante é o overlap: fazer os chunks se sobreporem em algumas palavras para não perder contexto entre as fronteiras dos pedaços.
