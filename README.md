@@ -115,6 +115,15 @@ docs/
 
 Use a pasta `docs/` para registrar aprendizado diario. O objetivo nao e apenas salvar codigo, mas criar evidencia do seu raciocinio tecnico.
 
+## Configuração
+
+O projeto usa variáveis de ambiente para permitir configurações diferentes entre ambiente local, desenvolvimento e produção.
+
+Exemplo disponível em:
+
+```text
+.env.example
+
 ## Proximas semanas
 
 - Semana 2: PostgreSQL, Docker Compose, persistencia e inicio de modelagem.
