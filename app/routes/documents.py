@@ -1,21 +1,22 @@
 import logging
-from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session, select
 
 from app.config import settings
+from app.database import get_session
+from app.models import Document as DocumentModel
 from app.schemas import DocumentCreate, DocumentResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 logger = logging.getLogger(__name__)
 
-# Armazenamento em memória apenas para a Semana 1.
-# Na Semana 2, isso será substituído por PostgreSQL.
-_DOCUMENTS: list[DocumentResponse] = []
-
 
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def create_document(payload: DocumentCreate):
+def create_document(
+    payload: DocumentCreate,
+    session: Session = Depends(get_session),
+):
     clean_title = payload.title.strip()
     clean_content = payload.content.strip()
 
@@ -47,24 +48,41 @@ def create_document(payload: DocumentCreate):
             ),
         )
 
-    document = DocumentResponse(
-        id=str(uuid4()),
+    document = DocumentModel(
         title=clean_title,
         content=clean_content,
     )
 
-    _DOCUMENTS.append(document)
+    session.add(document)
+    session.commit()
+    session.refresh(document)
 
     logger.info(
-        "Document created successfully: id=%s title=%s",
+        "Document created successfully in PostgreSQL: id=%s title=%s",
         document.id,
         document.title,
     )
 
-    return document
+    return DocumentResponse(
+        id=str(document.id),
+        title=document.title,
+        content=document.content,
+    )
 
 
 @router.get("", response_model=list[DocumentResponse])
-def list_documents():
-    logger.info("Listing documents: count=%s", len(_DOCUMENTS))
-    return _DOCUMENTS
+def list_documents(
+    session: Session = Depends(get_session),
+):
+    documents = session.exec(select(DocumentModel)).all()
+
+    logger.info("Listing documents from PostgreSQL: count=%s", len(documents))
+
+    return [
+        DocumentResponse(
+            id=str(document.id),
+            title=document.title,
+            content=document.content,
+        )
+        for document in documents
+    ]
