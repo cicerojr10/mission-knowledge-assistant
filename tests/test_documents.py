@@ -1,17 +1,32 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import Session, delete
 
+from app.database import engine
 from app.main import app
-from app.routes.documents import _DOCUMENTS
+from app.models import Document as DocumentModel
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_documents():
-    _DOCUMENTS.clear()
+    """
+    Limpa a tabela document antes e depois de cada teste.
+
+    Antes da Semana 2, os testes limpavam a lista _DOCUMENTS em memória.
+    Agora os documentos são persistidos no PostgreSQL, então a limpeza precisa
+    acontecer diretamente no banco.
+    """
+    with Session(engine) as session:
+        session.exec(delete(DocumentModel))
+        session.commit()
+
     yield
-    _DOCUMENTS.clear()
+
+    with Session(engine) as session:
+        session.exec(delete(DocumentModel))
+        session.commit()
 
 
 def test_create_document_returns_created_document():
