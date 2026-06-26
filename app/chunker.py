@@ -1,4 +1,4 @@
-def split_text(
+﻿def split_text(
     text: str,
     chunk_size: int = 500,
     overlap: int = 50,
@@ -6,15 +6,8 @@ def split_text(
     """
     Divide um texto em chunks de tamanho fixo com overlap.
 
-    Esta função ainda não salva nada no banco.
+    Esta função não salva dados no banco.
     Ela apenas transforma um texto completo em uma lista de trechos.
-
-    Exemplo:
-    - chunk_size=500
-    - overlap=50
-
-    O próximo chunk começa 50 caracteres antes do fim do chunk anterior,
-    preservando um pequeno contexto entre os trechos.
     """
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero.")
