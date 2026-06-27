@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+﻿from pydantic import BaseModel, Field
 
 
 class DocumentCreate(BaseModel):
@@ -10,3 +10,12 @@ class DocumentResponse(BaseModel):
     id: str
     title: str
     content: str
+    chunk_count: int = 0
+
+
+class ChunkResponse(BaseModel):
+    id: str
+    document_id: str
+    content: str
+    chunk_index: int
+    char_count: int
