@@ -19,3 +19,12 @@ class ChunkResponse(BaseModel):
     content: str
     chunk_index: int
     char_count: int
+
+
+class SearchResultResponse(BaseModel):
+    chunk_id: str
+    document_id: str
+    document_title: str
+    content: str
+    chunk_index: int
+    char_count: int
