@@ -1,4 +1,4 @@
-# ADR-001 - Usar FastAPI como base da API
+# ADR-001 - Uso do FastAPI como base da API
 
 ## Status
 
@@ -6,26 +6,30 @@ Aceita
 
 ## Contexto
 
-O projeto precisa de uma API simples, clara e evolutiva para servir como base de uma aplicacao de IA aplicada. Antes de implementar RAG, embeddings e evals, precisamos de um backend que receba requisicoes, valide dados e exponha endpoints documentados.
+O projeto precisa de uma API HTTP simples, clara e evolutiva para servir como base de um assistente de conhecimento baseado em documentos.
 
-## Decisao
+Antes de implementar funcionalidades como embeddings, busca vetorial, RAG e avaliação de respostas, é necessário estabelecer uma fundação backend capaz de receber requisições, validar dados, expor endpoints documentados e permitir evolução incremental da aplicação.
+
+## Decisão
 
 Usar FastAPI como framework inicial da API.
 
 ## Motivos
 
-- E uma ferramenta moderna para APIs em Python.
-- Gera documentacao automatica em `/docs`.
-- Usa type hints e Pydantic para validacao.
-- Combina bem com projetos de IA, dados e automacao.
-- Permite evoluir para endpoints de documentos, busca, RAG e evals.
+* Possui boa integração com type hints do Python.
+* Facilita a validação de dados com schemas baseados em Pydantic.
+* Gera documentação interativa automaticamente em `/docs`.
+* Permite uma estrutura simples para os primeiros endpoints sem impedir crescimento posterior.
+* É adequado para aplicações backend que podem evoluir para fluxos envolvendo documentos, busca, embeddings e LLMs.
 
 ## Trade-offs
 
-- Para empresas Java, Spring Boot pode ser mais comum.
-- Para sistemas muito simples, Flask poderia ser suficiente.
-- FastAPI exige entender type hints, schemas e validacao.
+* Em ambientes corporativos orientados a Java, Spring Boot pode ser uma escolha mais comum.
+* Para APIs muito pequenas, Flask poderia ser suficiente.
+* FastAPI exige familiaridade com type hints, schemas, validação de dados e organização modular da aplicação.
 
-## Consequencias
+## Consequências
 
-O projeto fica alinhado com a trilha de Engenheiro de Aplicacoes de IA, mantendo Python como stack principal e permitindo integracao futura com embeddings, bancos vetoriais e LLMs.
+O projeto passa a ter uma base backend em Python, com documentação automática, validação estruturada e uma arquitetura adequada para evolução incremental.
+
+Essa decisão mantém o projeto alinhado à trilha de Engenharia de Aplicações de IA, permitindo integração futura com persistência, chunking, embeddings, bancos vetoriais e LLMs.
