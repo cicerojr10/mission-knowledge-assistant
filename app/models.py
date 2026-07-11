@@ -1,3 +1,5 @@
+from pgvector.sqlalchemy import VECTOR
+from sqlalchemy import Column
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -20,5 +22,9 @@ class Chunk(SQLModel, table=True):
     content: str
     chunk_index: int
     char_count: int
+    embedding: list[float] | None = Field(
+        default=None,
+        sa_column=Column(VECTOR(384), nullable=True),
+)
 
     document: Document = Relationship(back_populates="chunks")
