@@ -28,3 +28,13 @@ class SearchResultResponse(BaseModel):
     content: str
     chunk_index: int
     char_count: int
+
+
+class SemanticSearchResultResponse(BaseModel):
+    chunk_id: str
+    document_id: str
+    document_title: str
+    content: str
+    chunk_index: int
+    char_count: int
+    distance: float
