@@ -182,3 +182,84 @@ def test_semantic_search_validates_top_k(top_k):
     )
 
     assert response.status_code == 422
+    
+def test_semantic_search_filters_results_by_max_distance(
+    monkeypatch,
+):
+    query_embedding = create_vector(1.0)
+
+    monkeypatch.setattr(
+        semantic_search_service,
+        "generate_embedding",
+        lambda query: query_embedding,
+    )
+
+    create_semantic_search_data()
+
+    response = client.get(
+        "/search/semantic",
+        params={
+            "q": "lunar exploration",
+            "top_k": 10,
+            "max_distance": 0.25,
+        },
+    )
+
+    assert response.status_code == 200
+
+    results = response.json()
+
+    assert len(results) == 2
+    assert [result["content"] for result in results] == [
+        "Exact semantic match.",
+        "Related semantic match.",
+    ]
+
+    assert all(
+        result["distance"] <= 0.25
+        for result in results
+    )
+
+
+def test_semantic_search_returns_empty_list_when_all_results_exceed_threshold(
+    monkeypatch,
+):
+    query_embedding = create_vector(-1.0)
+
+    monkeypatch.setattr(
+        semantic_search_service,
+        "generate_embedding",
+        lambda query: query_embedding,
+    )
+
+    create_semantic_search_data()
+
+    response = client.get(
+        "/search/semantic",
+        params={
+            "q": "completely unrelated query",
+            "top_k": 10,
+            "max_distance": 0.50,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.parametrize(
+    "max_distance",
+    [-0.01, 2.01],
+)
+def test_semantic_search_validates_max_distance(
+    max_distance,
+):
+    response = client.get(
+        "/search/semantic",
+        params={
+            "q": "lunar exploration",
+            "max_distance": max_distance,
+        },
+    )
+
+    assert response.status_code == 422

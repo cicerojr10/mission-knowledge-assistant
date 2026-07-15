@@ -65,6 +65,11 @@ def search_chunks(
 def semantic_search_chunks(
     q: str = Query(..., min_length=1),
     top_k: int = Query(default=5, ge=1, le=20),
+    max_distance: float | None = Query(
+        default=None,
+        ge=0.0,
+        le=2.0,
+    ),
     session: Session = Depends(get_session),
 ):
     clean_query = q.strip()
@@ -76,17 +81,22 @@ def semantic_search_chunks(
         )
 
     results = search_chunks_semantically(
-        session=session,
-        query=clean_query,
-        top_k=top_k,
-    )
+    session=session,
+    query=clean_query,
+    top_k=top_k,
+    max_distance=max_distance,
+)
 
     logger.info(
-        "Semantic search executed: query=%s top_k=%s result_count=%s",
-        clean_query,
-        top_k,
-        len(results),
-    )
+    (
+        "Semantic search executed: query=%s top_k=%s "
+        "max_distance=%s result_count=%s"
+    ),
+    clean_query,
+    top_k,
+    max_distance,
+    len(results),
+)
 
     return [
         SemanticSearchResultResponse(
