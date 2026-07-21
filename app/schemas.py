@@ -38,3 +38,15 @@ class SemanticSearchResultResponse(BaseModel):
     chunk_index: int
     char_count: int
     distance: float
+
+class HybridSearchResultResponse(BaseModel):
+    chunk_id: str
+    document_id: str
+    document_title: str
+    content: str
+    chunk_index: int
+    char_count: int
+    rrf_score: float
+    textual_rank: int | None
+    semantic_rank: int | None
+    semantic_distance: float | None
