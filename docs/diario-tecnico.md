@@ -1,4 +1,4 @@
-# Diário Técnico — Mission Knowledge Assistant
+﻿# Diário Técnico — Mission Knowledge Assistant
 
 Este diário registra minha evolução prática na construção do projeto **Mission Knowledge Assistant**, uma aplicação de IA aplicada com foco em APIs, LLMs, RAG, embeddings, guardrails, evals, segurança, observabilidade e fundamentos de produção.
 
@@ -646,3 +646,166 @@ Depois de revisar, rode:
 ```powershell
 git add .
 git commit -m "add Docker support and complete week 1 review"
+
+
+# Retrospectiva consolidada — Semanas 2 a 4
+
+## Nota de continuidade
+
+O diário técnico não foi atualizado diariamente durante as Semanas 2, 3 e 4.
+
+O desenvolvimento continuou sendo registrado por código, commits, Pull Requests, ADRs, check-ins, testes e documentos de experimentos.
+
+Em vez de reconstruir artificialmente entradas diárias, esta retrospectiva registra os principais aprendizados do período com base no trabalho realmente realizado.
+
+## Semana 2 — Persistência
+
+A principal evolução foi substituir armazenamento temporário em memória por persistência real com PostgreSQL.
+
+O projeto passou a utilizar SQLModel, Alembic e Docker Compose.
+
+Comecei a compreender melhor que modelo da aplicação, schema da API, schema do banco e migration representam responsabilidades diferentes.
+
+Um aprendizado importante foi perceber que alterar uma classe Python não altera automaticamente um banco já existente.
+
+## Semana 3 — Chunking e busca textual
+
+O projeto evoluiu para a estrutura:
+
+Document → Chunk → persistência → retrieval
+
+Foi criada uma estratégia inicial de chunking com `chunk_size = 500` e `overlap = 50`.
+
+Também foi implementada busca textual simples com `ILIKE`.
+
+Essa escolha foi intencionalmente básica.
+
+O objetivo era primeiro possuir uma baseline compreensível e testável para posteriormente comparar com recuperação semântica.
+
+## Semana 4 — Embeddings e pgvector
+
+A maior evolução arquitetural até este ponto aconteceu na Semana 4.
+
+O projeto passou a gerar embeddings com `sentence-transformers/all-MiniLM-L6-v2`, utilizando vetores de 384 dimensões.
+
+Os embeddings foram associados aos chunks e persistidos no PostgreSQL com pgvector.
+
+A busca passou a incluir recuperação semântica por distância de cosseno.
+
+## Ranking não é relevância
+
+Um dos aprendizados mais importantes foi perceber que um mecanismo de ranking sempre consegue ordenar candidatos disponíveis.
+
+O primeiro colocado não é automaticamente relevante.
+
+Isso levou à separação entre:
+
+`top_k` → quantidade
+
+`max_distance` → aceitação
+
+Depois disso, foi criado um experimento controlado para observar o comportamento dessas decisões.
+
+O valor `0.60` apresentou o melhor equilíbrio no pequeno corpus utilizado, mas não deve ser tratado como threshold universal.
+
+## Busca híbrida
+
+Textual e semântico mostraram características complementares.
+
+Como extensão do plano original, foi implementada busca híbrida com Reciprocal Rank Fusion.
+
+O RRF permitiu combinar rankings sem somar diretamente sinais com escalas diferentes.
+
+O projeto passou a possuir três estratégias independentes:
+
+- textual;
+- semântica;
+- híbrida.
+
+## Testes e evidência
+
+Ao final da Semana 4, a suíte completa chegou a:
+
+`54 passed`
+
+Mais importante que o número foi a mudança na forma de raciocinar.
+
+Passei a perguntar não apenas se o código funciona, mas também:
+
+- qual comportamento quero garantir?
+- como posso provar isso?
+- quais casos enfraquecem minha hipótese?
+- o que meu experimento realmente demonstra?
+- o que ainda não posso afirmar?
+
+## Evolução da metodologia de estudo
+
+A Semana 4 também consolidou um processo de aprendizado mais completo:
+
+estudar
+→ implementar
+→ testar
+→ experimentar
+→ documentar
+→ revisar
+→ explicar
+
+Foram utilizados materiais técnicos e podcasts no NotebookLM.
+
+Ao final do ciclo, gravei uma aula de aproximadamente 20 minutos explicando a evolução da arquitetura e as decisões tomadas.
+
+A aula gravada passou a fazer parte da metodologia semanal porque implementar e explicar são competências diferentes.
+
+## Mudança de mentalidade
+
+No início do projeto, minha pergunta era frequentemente:
+
+"Como implemento esta tecnologia?"
+
+A pergunta está evoluindo para:
+
+"Qual problema existe?"
+
+"Qual é a solução mais simples que resolve esse problema?"
+
+"Como valido a decisão?"
+
+"Quais trade-offs estou aceitando?"
+
+"Qual evidência eu realmente tenho?"
+
+Essa mudança de raciocínio é uma das partes mais importantes do projeto para minha transição profissional.
+
+## Estado ao final da Semana 4
+
+O Mission Knowledge Assistant possui atualmente:
+
+- FastAPI;
+- PostgreSQL;
+- SQLModel;
+- Alembic;
+- Docker;
+- Pytest;
+- Document → Chunk;
+- busca textual;
+- embeddings;
+- pgvector;
+- busca semântica;
+- threshold de relevância;
+- avaliação controlada;
+- busca híbrida com RRF.
+
+RAG ainda não foi implementado.
+
+## Próximo passo
+
+Antes da Semana 5, o próximo passo é comparar o projeto com vagas reais e identificar:
+
+mercado
+→ competências já demonstradas
+→ gaps
+→ prioridades
+
+A próxima etapa técnica não deve existir apenas porque uma tecnologia é interessante.
+
+Ela deve continuar ligada a um problema, a evidência e ao meu objetivo profissional.
