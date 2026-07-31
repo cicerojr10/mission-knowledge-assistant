@@ -3,10 +3,31 @@ from sqlalchemy import Column
 from sqlmodel import Field, Relationship, SQLModel
 
 
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(unique=True)
+    password_hash: str
+
+    documents: list["Document"] = Relationship(back_populates="owner")
+
+
 class Document(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
     content: str
+
+    # Transitional security migration:
+    # owner_id will become mandatory after authentication and existing tests
+    # are adapted to create documents through an authenticated user.
+    owner_id: int | None = Field(
+        default=None,
+        foreign_key="users.id",
+        index=True,
+    )
+
+    owner: User | None = Relationship(back_populates="documents")
 
     chunks: list["Chunk"] = Relationship(
         back_populates="document",
@@ -25,6 +46,6 @@ class Chunk(SQLModel, table=True):
     embedding: list[float] | None = Field(
         default=None,
         sa_column=Column(VECTOR(384), nullable=True),
-)
+    )
 
     document: Document = Relationship(back_populates="chunks")

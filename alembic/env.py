@@ -13,10 +13,9 @@ from alembic import context
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
-# Import necessário para registrar os models no SQLModel.metadata.
-# Mesmo que Document não seja usado diretamente neste arquivo,
-# o import faz a tabela entrar no metadata usado pelo autogenerate.
-from app.models import Document  # noqa: E402, F401
+# Import necessário para registrar todos os models no SQLModel.metadata.
+# O Alembic usa esse metadata para comparar os models com o schema atual.
+import app.models  # noqa: E402, F401
 
 
 # this is the Alembic Config object, which provides
