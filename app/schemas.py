@@ -1,4 +1,50 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    SecretStr,
+    field_validator,
+)
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: SecretStr
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def strip_email_whitespace(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.lower()
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_length(cls, value: SecretStr) -> SecretStr:
+        password_length = len(value.get_secret_value())
+
+        if password_length < 15:
+            raise ValueError(
+                "Password must contain at least 15 characters."
+            )
+
+        if password_length > 128:
+            raise ValueError(
+                "Password must contain at most 128 characters."
+            )
+
+        return value
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: EmailStr
 
 
 class DocumentCreate(BaseModel):
@@ -38,6 +84,7 @@ class SemanticSearchResultResponse(BaseModel):
     chunk_index: int
     char_count: int
     distance: float
+
 
 class HybridSearchResultResponse(BaseModel):
     chunk_id: str

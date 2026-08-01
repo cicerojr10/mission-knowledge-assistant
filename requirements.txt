@@ -60,3 +60,10 @@ typing_extensions==4.15.0
 uvicorn==0.49.0
 watchfiles==1.2.0
 websockets==16.0
+argon2-cffi==25.1.0
+argon2-cffi-bindings==25.1.0
+cffi==2.1.0
+dnspython==2.8.0
+email-validator==2.3.0
+pwdlib==0.3.0
+pycparser==3.0
