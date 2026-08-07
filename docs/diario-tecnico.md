@@ -809,3 +809,46 @@ mercado
 A próxima etapa técnica não deve existir apenas porque uma tecnologia é interessante.
 
 Ela deve continuar ligada a um problema, a evidência e ao meu objetivo profissional.
+
+## Security Slice ? progresso at? o Dia 4
+
+Antes de iniciar RAG, o projeto passou a tratar autentica??o, autoriza??o e isolamento entre usu?rios como requisitos arquiteturais.
+
+At? o Dia 4 foram implementados:
+
+- modelo de usu?rios e relacionamento de propriedade com documentos;
+- registro de usu?rios com senha armazenada por hash Argon2;
+- autentica??o com JWT;
+- endpoints de login e identifica??o do usu?rio autenticado;
+- depend?ncia reutiliz?vel `get_current_user`;
+- autentica??o obrigat?ria nas rotas de documentos;
+- atribui??o de `Document.owner_id` pelo backend;
+- listagem de documentos filtrada pelo usu?rio autenticado;
+- prote??o da consulta de chunks por `document_id` e `owner_id`;
+- resposta `404` para tentativa de acesso ao documento de outro usu?rio;
+- constraint `NOT NULL` para `document.owner_id`.
+
+O campo `owner_id` n?o faz parte de `DocumentCreate`.
+
+Essa decis?o impede que o cliente escolha arbitrariamente o propriet?rio do documento.
+
+A aplica??o identifica o usu?rio pelo token e utiliza seu ID ao persistir e consultar os dados.
+
+Ao final do Dia 4, a su?te completa possui:
+
+`98 passed`
+
+A migration `1b2ec7d5f630` tornou obrigat?rio o propriet?rio de todo documento no PostgreSQL.
+
+Os testes antigos que criavam documentos diretamente no banco tamb?m foram adaptados ao novo contrato de propriedade.
+
+O Security Slice ainda n?o est? conclu?do.
+
+As buscas textual, sem?ntica e h?brida ainda precisam receber o usu?rio autenticado e filtrar todos os resultados por ownership.
+
+RAG continua adiado at? que esse isolamento seja garantido em todos os caminhos de retrieval.
+
+Tamb?m permanecem registradas duas pend?ncias t?cnicas independentes:
+
+- avisos de deprecia??o do Starlette/TestClient e do status HTTP 413;
+- aviso de incompatibilidade da vers?o de collation do PostgreSQL usado no ambiente local.
