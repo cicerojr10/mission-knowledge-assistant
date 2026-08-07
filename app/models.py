@@ -18,11 +18,7 @@ class Document(SQLModel, table=True):
     title: str
     content: str
 
-    # Transitional security migration:
-    # owner_id will become mandatory after authentication and existing tests
-    # are adapted to create documents through an authenticated user.
-    owner_id: int | None = Field(
-        default=None,
+    owner_id: int = Field(
         foreign_key="users.id",
         index=True,
     )

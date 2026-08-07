@@ -1,9 +1,11 @@
+from uuid import uuid4
+
 import pytest
 from sqlmodel import Session, delete
 
 import app.services.hybrid_search as hybrid_search_service
 from app.database import engine
-from app.models import Chunk, Document
+from app.models import Chunk, Document, User
 from app.services.hybrid_search import (
     get_persisted_chunk_id,
     search_chunks_hybrid,
@@ -15,6 +17,7 @@ def clear_database():
     with Session(engine) as session:
         session.exec(delete(Chunk))
         session.exec(delete(Document))
+        session.exec(delete(User))
         session.commit()
 
     yield
@@ -22,6 +25,7 @@ def clear_database():
     with Session(engine) as session:
         session.exec(delete(Chunk))
         session.exec(delete(Document))
+        session.exec(delete(User))
         session.commit()
 
 
@@ -31,9 +35,22 @@ def create_document_with_chunk(
     title: str,
     content: str,
 ) -> tuple[Document, Chunk]:
+    owner = User(
+        email=f"hybrid-{uuid4()}@example.com",
+        password_hash="test-only-hash",
+    )
+    session.add(owner)
+    session.flush()
+
+    if owner.id is None:
+        raise RuntimeError(
+            "User ID was not generated."
+        )
+
     document = Document(
         title=title,
         content=content,
+        owner_id=owner.id,
     )
 
     session.add(document)
