@@ -6,8 +6,10 @@ from sqlmodel import Session, select
 from app.chunker import split_text
 from app.config import settings
 from app.database import get_session
+from app.dependencies.auth import get_current_user
 from app.models import Chunk as ChunkModel
 from app.models import Document as DocumentModel
+from app.models import User as UserModel
 from app.schemas import ChunkResponse, DocumentCreate, DocumentResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -18,6 +20,7 @@ logger = logging.getLogger(__name__)
 def create_document(
     payload: DocumentCreate,
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
     clean_title = payload.title.strip()
     clean_content = payload.content.strip()
@@ -50,9 +53,15 @@ def create_document(
             ),
         )
 
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
+
     document = DocumentModel(
         title=clean_title,
         content=clean_content,
+        owner_id=current_user.id,
     )
 
     chunk_contents = split_text(clean_content)
@@ -96,10 +105,24 @@ def create_document(
 @router.get("", response_model=list[DocumentResponse])
 def list_documents(
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
-    documents = session.exec(select(DocumentModel)).all()
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
 
-    logger.info("Listing documents from PostgreSQL: count=%s", len(documents))
+    documents = session.exec(
+        select(DocumentModel).where(
+            DocumentModel.owner_id == current_user.id
+        )
+    ).all()
+
+    logger.info(
+        "Listing documents from PostgreSQL: owner_id=%s count=%s",
+        current_user.id,
+        len(documents),
+    )
 
     return [
         DocumentResponse(
@@ -116,8 +139,19 @@ def list_documents(
 def list_document_chunks(
     document_id: int,
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
-    document = session.get(DocumentModel, document_id)
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
+
+    document = session.exec(
+        select(DocumentModel).where(
+            DocumentModel.id == document_id,
+            DocumentModel.owner_id == current_user.id,
+        )
+    ).first()
 
     if document is None:
         raise HTTPException(
@@ -132,8 +166,10 @@ def list_document_chunks(
     ).all()
 
     logger.info(
-        "Listing chunks for document: document_id=%s chunk_count=%s",
+        "Listing chunks for document: "
+        "document_id=%s owner_id=%s chunk_count=%s",
         document_id,
+        current_user.id,
         len(chunks),
     )
 

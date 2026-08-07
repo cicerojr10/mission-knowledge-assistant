@@ -1,11 +1,12 @@
 from collections.abc import Sequence
+from uuid import uuid4
 
 import numpy as np
 import pytest
 from sqlmodel import Session, delete, select
 
 from app.database import engine
-from app.models import Chunk, Document
+from app.models import Chunk, Document, User
 from app.services.embeddings import EMBEDDING_DIMENSION
 from scripts.backfill_embeddings import backfill_embeddings
 
@@ -14,6 +15,7 @@ def clean_database() -> None:
     with Session(engine) as session:
         session.exec(delete(Chunk))
         session.exec(delete(Document))
+        session.exec(delete(User))
         session.commit()
 
 
@@ -30,9 +32,19 @@ def create_chunks(
     *,
     embeddings: list[list[float] | None],
 ) -> list[Chunk]:
+    owner = User(
+        email=f"embedding-{uuid4()}@example.com",
+        password_hash="test-only-hash",
+    )
+    session.add(owner)
+    session.flush()
+
+    assert owner.id is not None
+
     document = Document(
         title="Embedding backfill test",
         content="Document used to test embedding persistence.",
+        owner_id=owner.id,
     )
     session.add(document)
     session.flush()

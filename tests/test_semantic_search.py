@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete
@@ -5,7 +7,7 @@ from sqlmodel import Session, delete
 import app.services.semantic_search as semantic_search_service
 from app.database import engine
 from app.main import app
-from app.models import Chunk, Document
+from app.models import Chunk, Document, User
 from app.services.embeddings import EMBEDDING_DIMENSION
 
 
@@ -17,6 +19,7 @@ def clear_database():
     with Session(engine) as session:
         session.exec(delete(Chunk))
         session.exec(delete(Document))
+        session.exec(delete(User))
         session.commit()
 
     yield
@@ -24,6 +27,7 @@ def clear_database():
     with Session(engine) as session:
         session.exec(delete(Chunk))
         session.exec(delete(Document))
+        session.exec(delete(User))
         session.commit()
 
 
@@ -39,9 +43,19 @@ def create_vector(
 
 def create_semantic_search_data() -> None:
     with Session(engine) as session:
+        owner = User(
+            email=f"semantic-{uuid4()}@example.com",
+            password_hash="test-only-hash",
+        )
+        session.add(owner)
+        session.flush()
+
+        assert owner.id is not None
+
         document = Document(
             title="Semantic Search Validation",
             content="Document used to validate semantic search.",
+            owner_id=owner.id,
         )
         session.add(document)
         session.flush()
