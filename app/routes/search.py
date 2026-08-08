@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
 from app.database import get_session
+from app.dependencies.auth import get_current_user
 from app.models import Chunk as ChunkModel
 from app.models import Document as DocumentModel
+from app.models import User as UserModel
 from app.schemas import (
     HybridSearchResultResponse,
     SearchResultResponse,
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 def search_chunks(
     q: str = Query(..., min_length=1),
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
     clean_query = q.strip()
 
@@ -35,11 +38,20 @@ def search_chunks(
             detail="Search query cannot be empty.",
         )
 
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
+
     statement = (
         select(ChunkModel, DocumentModel)
         .where(
             ChunkModel.document_id
             == DocumentModel.id
+        )
+        .where(
+            DocumentModel.owner_id
+            == current_user.id
         )
         .where(
             ChunkModel.content.ilike(
