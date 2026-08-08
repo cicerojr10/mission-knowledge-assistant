@@ -91,6 +91,8 @@ def get_auth_headers() -> dict[str, str]:
 
 
 def test_search_returns_matching_chunks():
+    auth_headers = get_auth_headers()
+
     payload = {
         "title": "Artemis Mission Overview",
         "content": (
@@ -101,7 +103,7 @@ def test_search_returns_matching_chunks():
 
     create_response = client.post(
         "/documents",
-        headers=get_auth_headers(),
+        headers=auth_headers,
         json=payload,
     )
 
@@ -111,6 +113,7 @@ def test_search_returns_matching_chunks():
 
     search_response = client.get(
         "/search",
+        headers=auth_headers,
         params={"q": "Moon"},
     )
 
@@ -127,6 +130,8 @@ def test_search_returns_matching_chunks():
 
 
 def test_search_is_case_insensitive():
+    auth_headers = get_auth_headers()
+
     payload = {
         "title": "Mars Mission Overview",
         "content": (
@@ -137,7 +142,7 @@ def test_search_is_case_insensitive():
 
     create_response = client.post(
         "/documents",
-        headers=get_auth_headers(),
+        headers=auth_headers,
         json=payload,
     )
 
@@ -145,6 +150,7 @@ def test_search_is_case_insensitive():
 
     search_response = client.get(
         "/search",
+        headers=auth_headers,
         params={"q": "mars"},
     )
 
@@ -157,6 +163,8 @@ def test_search_is_case_insensitive():
 
 
 def test_search_returns_empty_list_when_no_chunks_match():
+    auth_headers = get_auth_headers()
+
     payload = {
         "title": "Artemis Mission Overview",
         "content": (
@@ -167,7 +175,7 @@ def test_search_returns_empty_list_when_no_chunks_match():
 
     create_response = client.post(
         "/documents",
-        headers=get_auth_headers(),
+        headers=auth_headers,
         json=payload,
     )
 
@@ -175,6 +183,7 @@ def test_search_returns_empty_list_when_no_chunks_match():
 
     search_response = client.get(
         "/search",
+        headers=auth_headers,
         params={"q": "Jupiter"},
     )
 
@@ -185,6 +194,7 @@ def test_search_returns_empty_list_when_no_chunks_match():
 def test_search_rejects_blank_query():
     response = client.get(
         "/search",
+        headers=get_auth_headers(),
         params={"q": "   "},
     )
 
@@ -192,3 +202,95 @@ def test_search_rejects_blank_query():
     assert response.json()["detail"] == (
         "Search query cannot be empty."
     )
+
+def get_auth_headers_for_user(email: str) -> dict[str, str]:
+    register_response = client.post(
+        "/users",
+        json={
+            "email": email,
+            "password": USER_PASSWORD,
+        },
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": email,
+            "password": USER_PASSWORD,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    return {
+        "Authorization": f"Bearer {access_token}",
+    }
+
+
+def test_search_returns_only_authenticated_user_chunks():
+    first_user_headers = get_auth_headers_for_user(
+        "first-search-owner@example.com"
+    )
+    second_user_headers = get_auth_headers_for_user(
+        "second-search-owner@example.com"
+    )
+
+    first_response = client.post(
+        "/documents",
+        headers=first_user_headers,
+        json={
+            "title": "Documento do primeiro usuario",
+            "content": (
+                "ownership-keyword conteudo privado "
+                "do primeiro usuario."
+            ),
+        },
+    )
+
+    second_response = client.post(
+        "/documents",
+        headers=second_user_headers,
+        json={
+            "title": "Documento do segundo usuario",
+            "content": (
+                "ownership-keyword conteudo privado "
+                "do segundo usuario."
+            ),
+        },
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    response = client.get(
+        "/search",
+        headers=first_user_headers,
+        params={"q": "ownership-keyword"},
+    )
+
+    assert response.status_code == 200
+
+    results = response.json()
+
+    assert len(results) == 1
+    assert results[0]["document_id"] == first_response.json()["id"]
+    assert results[0]["document_title"] == (
+        "Documento do primeiro usuario"
+    )
+
+
+def test_search_requires_authentication():
+    response = client.get(
+        "/search",
+        params={"q": "Moon"},
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "Could not validate credentials."
+    }
+    assert response.headers["www-authenticate"] == "Bearer"
