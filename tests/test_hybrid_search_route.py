@@ -3,12 +3,29 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 import app.routes.search as search_route
+from app.dependencies.auth import get_current_user
 from app.main import app
-from app.models import Chunk, Document
+from app.models import Chunk, Document, User
 from app.services.hybrid_search import HybridSearchResult
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def authenticated_user_override():
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=123,
+        email="hybrid-route@example.com",
+        password_hash="test-only-hash",
+    )
+
+    yield
+
+    app.dependency_overrides.pop(
+        get_current_user,
+        None,
+    )
 
 
 def create_hybrid_result() -> HybridSearchResult:
@@ -49,11 +66,13 @@ def test_hybrid_search_uses_default_parameters(
         session: Session,
         query: str,
         top_k: int,
+        owner_id: int,
         max_distance: float | None = None,
         rrf_k: int = 60,
     ):
         received_arguments["query"] = query
         received_arguments["top_k"] = top_k
+        received_arguments["owner_id"] = owner_id
         received_arguments["max_distance"] = (
             max_distance
         )
@@ -80,6 +99,7 @@ def test_hybrid_search_uses_default_parameters(
     assert received_arguments == {
         "query": "Artemis",
         "top_k": 5,
+        "owner_id": 123,
         "max_distance": None,
         "rrf_k": 60,
     }
@@ -94,11 +114,13 @@ def test_hybrid_search_serializes_result_and_forwards_parameters(
         session: Session,
         query: str,
         top_k: int,
+        owner_id: int,
         max_distance: float | None = None,
         rrf_k: int = 60,
     ):
         received_arguments["query"] = query
         received_arguments["top_k"] = top_k
+        received_arguments["owner_id"] = owner_id
         received_arguments["max_distance"] = (
             max_distance
         )
@@ -155,6 +177,7 @@ def test_hybrid_search_serializes_result_and_forwards_parameters(
     assert received_arguments == {
         "query": "return to the Moon",
         "top_k": 3,
+        "owner_id": 123,
         "max_distance": 0.60,
         "rrf_k": 30,
     }

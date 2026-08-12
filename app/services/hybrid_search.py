@@ -38,6 +38,7 @@ def search_chunks_hybrid(
     session: Session,
     query: str,
     top_k: int,
+    owner_id: int,
     max_distance: float | None = None,
     rrf_k: int = 60,
 ) -> list[HybridSearchResult]:
@@ -57,6 +58,7 @@ def search_chunks_hybrid(
     textual_statement = (
         select(Chunk, Document)
         .where(Chunk.document_id == Document.id)
+        .where(Document.owner_id == owner_id)
         .where(Chunk.content.ilike(f"%{query}%"))
         .order_by(
             Document.id,
@@ -74,6 +76,7 @@ def search_chunks_hybrid(
             session=session,
             query=query,
             top_k=top_k,
+            owner_id=owner_id,
             max_distance=max_distance,
         )
     )

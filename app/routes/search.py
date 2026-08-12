@@ -102,6 +102,7 @@ def semantic_search_chunks(
         le=2.0,
     ),
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
     clean_query = q.strip()
 
@@ -111,10 +112,16 @@ def semantic_search_chunks(
             detail="Search query cannot be empty.",
         )
 
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
+
     results = search_chunks_semantically(
         session=session,
         query=clean_query,
         top_k=top_k,
+        owner_id=current_user.id,
         max_distance=max_distance,
     )
 
@@ -166,6 +173,7 @@ def hybrid_search_chunks(
         le=1000,
     ),
     session: Session = Depends(get_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
     clean_query = q.strip()
 
@@ -175,10 +183,16 @@ def hybrid_search_chunks(
             detail="Search query cannot be empty.",
         )
 
+    if current_user.id is None:
+        raise RuntimeError(
+            "Authenticated user does not have a persisted ID."
+        )
+
     results = search_chunks_hybrid(
         session=session,
         query=clean_query,
         top_k=top_k,
+        owner_id=current_user.id,
         max_distance=max_distance,
         rrf_k=rrf_k,
     )
