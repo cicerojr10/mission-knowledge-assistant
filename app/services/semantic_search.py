@@ -14,6 +14,7 @@ def search_chunks_semantically(
     session: Session,
     query: str,
     top_k: int,
+    owner_id: int,
     max_distance: float | None = None,
 ) -> Sequence[SemanticSearchRow]:
     """
@@ -34,6 +35,7 @@ def search_chunks_semantically(
     statement = (
         select(Chunk, Document, distance)
         .where(Chunk.document_id == Document.id)
+        .where(Document.owner_id == owner_id)
         .where(Chunk.embedding.is_not(None))
     )
 
