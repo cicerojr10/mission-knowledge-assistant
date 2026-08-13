@@ -1,4 +1,4 @@
-﻿# Diário Técnico — Mission Knowledge Assistant
+# Diário Técnico — Mission Knowledge Assistant
 
 Este diário registra minha evolução prática na construção do projeto **Mission Knowledge Assistant**, uma aplicação de IA aplicada com foco em APIs, LLMs, RAG, embeddings, guardrails, evals, segurança, observabilidade e fundamentos de produção.
 
@@ -852,3 +852,68 @@ Tamb?m permanecem registradas duas pend?ncias t?cnicas independentes:
 
 - avisos de deprecia??o do Starlette/TestClient e do status HTTP 413;
 - aviso de incompatibilidade da vers?o de collation do PostgreSQL usado no ambiente local.
+
+---
+
+## Security Slice - fechamento nos Dias 5, 6 e 7
+
+Depois da protecao das rotas de documentos e chunks, o mesmo principio de ownership foi levado para todos os caminhos atuais de retrieval.
+
+### Dia 5 - busca textual
+
+A busca textual passou a exigir usuario autenticado e a filtrar os documentos por `Document.owner_id == current_user.id`.
+
+Foi adicionado um teste cross-user com dois usuarios e o mesmo termo de busca, confirmando que cada usuario recebe somente seus proprios chunks.
+
+### Dia 6 - busca semantica e hibrida
+
+As buscas semantica e hibrida passaram a exigir autenticacao e a receber o `owner_id` derivado do usuario autenticado.
+
+Na busca semantica, o filtro de ownership acontece antes da ordenacao por distancia e antes do `top_k`.
+
+Na busca hibrida, o ownership restringe os candidatos textuais e tambem e encaminhado para o retriever semantico antes da fusao por RRF.
+
+Essa ordem importa porque um documento proibido nao deve participar do ranking nem ocupar uma vaga do `top_k`.
+
+Ao final do Dia 6, a suite completa registrou:
+
+`104 passed, 2 warnings`
+
+### Dia 7 - matriz cross-user
+
+O fechamento do Security Slice adicionou testes HTTP de ponta a ponta para os caminhos semantico e hibrido.
+
+Os experimentos usam dois usuarios diferentes e criam deliberadamente um documento de outro usuario com relevancia maior.
+
+Mesmo com `top_k = 1`, o documento proibido nao participa do resultado do usuario autenticado.
+
+A matriz atual possui evidencia automatizada para:
+
+- autenticacao obrigatoria;
+- ownership atribuido pelo backend;
+- isolamento na listagem de documentos;
+- isolamento no acesso a chunks;
+- isolamento na busca textual;
+- isolamento na busca semantica;
+- isolamento na busca hibrida.
+
+Ao final do Dia 7, a suite completa registrou:
+
+`106 passed, 2 warnings`
+
+## Conclusao do Security Slice
+
+O escopo definido para esta etapa esta concluido.
+
+Os caminhos atuais de acesso e retrieval aplicam ownership antes da exposicao ou ranking dos dados.
+
+Isso nao significa que o sistema esteja comprovadamente seguro para producao. Permanecem outras dimensoes de seguranca e operacao, como configuracao de producao, secrets, dependencias, rate limiting, observabilidade, infraestrutura e testes de seguranca mais amplos.
+
+A conclusao desta etapa permite iniciar a proxima fase com uma regra arquitetural clara:
+
+usuario autenticado
+-> retrieval autorizado
+-> contexto permitido
+-> futura camada de RAG/LLM
+
+O futuro RAG deve preservar o mesmo `owner_id` derivado do usuario autenticado. O cliente nunca deve escolher arbitrariamente o proprietario usado no retrieval.
