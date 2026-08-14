@@ -122,3 +122,25 @@ class HybridSearchResultResponse(BaseModel):
     textual_rank: int | None
     semantic_rank: int | None
     semantic_distance: float | None
+
+
+class RagAnswerRequest(BaseModel):
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+    )
+
+
+class RagSourceResponse(BaseModel):
+    chunk_id: str
+    document_id: str
+    document_title: str
+    content: str
+    chunk_index: int
+
+
+class RagAnswerResponse(BaseModel):
+    answer: str | None
+    abstained: bool
+    sources: list[RagSourceResponse]
