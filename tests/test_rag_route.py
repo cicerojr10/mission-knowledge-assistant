@@ -1,10 +1,12 @@
-﻿from uuid import uuid4
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlmodel import Session, delete
 
+import app.routes.rag as rag_route
 from app.config import settings
 from app.database import engine
 from app.main import app
@@ -115,3 +117,71 @@ def test_rag_answer_abstains_when_no_authorized_context():
         "abstained": True,
         "sources": [],
     }
+
+def test_rag_answer_uses_authenticated_owner_and_returns_sources(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    me_response = client.get(
+        "/auth/me",
+        headers=headers,
+    )
+    assert me_response.status_code == 200
+
+    expected_owner_id = int(
+        me_response.json()["id"]
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_search_chunks_hybrid(**kwargs):
+        captured["owner_id"] = kwargs["owner_id"]
+        captured["query"] = kwargs["query"]
+
+        return [
+            SimpleNamespace(
+                chunk=SimpleNamespace(
+                    id=501,
+                    content="Authorized context.",
+                    chunk_index=0,
+                ),
+                document=SimpleNamespace(
+                    id=601,
+                    title="Authorized document",
+                ),
+            )
+        ]
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+        raising=False,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "What is authorized?",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert captured == {
+        "owner_id": expected_owner_id,
+        "query": "What is authorized?",
+    }
+
+    assert response.json()["answer"] is None
+    assert response.json()["sources"] == [
+        {
+            "chunk_id": "501",
+            "document_id": "601",
+            "document_title": "Authorized document",
+            "content": "Authorized context.",
+            "chunk_index": 0,
+        }
+    ]
