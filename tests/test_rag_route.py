@@ -118,7 +118,7 @@ def test_rag_answer_abstains_when_no_authorized_context():
         "sources": [],
     }
 
-def test_rag_answer_uses_authenticated_owner_and_returns_sources(
+def test_rag_answer_uses_context_evidence_as_sources(
     monkeypatch,
 ):
     headers = get_auth_headers()
@@ -133,6 +133,30 @@ def test_rag_answer_uses_authenticated_owner_and_returns_sources(
         me_response.json()["id"]
     )
 
+    first_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=501,
+            content="First retrieved candidate.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=601,
+            title="First document",
+        ),
+    )
+
+    second_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=502,
+            content="Selected context evidence.",
+            chunk_index=1,
+        ),
+        document=SimpleNamespace(
+            id=602,
+            title="Selected document",
+        ),
+    )
+
     captured: dict[str, object] = {}
 
     def fake_search_chunks_hybrid(**kwargs):
@@ -140,23 +164,27 @@ def test_rag_answer_uses_authenticated_owner_and_returns_sources(
         captured["query"] = kwargs["query"]
 
         return [
-            SimpleNamespace(
-                chunk=SimpleNamespace(
-                    id=501,
-                    content="Authorized context.",
-                    chunk_index=0,
-                ),
-                document=SimpleNamespace(
-                    id=601,
-                    title="Authorized document",
-                ),
-            )
+            first_result,
+            second_result,
         ]
+
+    def fake_build_rag_context(results):
+        captured["context_results"] = results
+
+        return SimpleNamespace(
+            text="Selected context.",
+            evidence=(second_result,),
+        )
 
     monkeypatch.setattr(
         rag_route,
         "search_chunks_hybrid",
         fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
         raising=False,
     )
 
@@ -170,18 +198,20 @@ def test_rag_answer_uses_authenticated_owner_and_returns_sources(
 
     assert response.status_code == 200
 
-    assert captured == {
-        "owner_id": expected_owner_id,
-        "query": "What is authorized?",
-    }
+    assert captured["owner_id"] == expected_owner_id
+    assert captured["query"] == "What is authorized?"
+    assert captured["context_results"] == [
+        first_result,
+        second_result,
+    ]
 
     assert response.json()["answer"] is None
     assert response.json()["sources"] == [
         {
-            "chunk_id": "501",
-            "document_id": "601",
-            "document_title": "Authorized document",
-            "content": "Authorized context.",
-            "chunk_index": 0,
+            "chunk_id": "502",
+            "document_id": "602",
+            "document_title": "Selected document",
+            "content": "Selected context evidence.",
+            "chunk_index": 1,
         }
     ]
