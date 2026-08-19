@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 from app.database import get_session
@@ -9,6 +9,7 @@ from app.schemas import (
     RagAnswerResponse,
     RagSourceResponse,
 )
+from app.services.context_builder import build_rag_context
 from app.services.hybrid_search import search_chunks_hybrid
 
 
@@ -36,6 +37,8 @@ def answer_question(
         owner_id=current_user.id,
     )
 
+    context = build_rag_context(results)
+
     sources = [
         RagSourceResponse(
             chunk_id=str(result.chunk.id),
@@ -44,7 +47,7 @@ def answer_question(
             content=result.chunk.content,
             chunk_index=result.chunk.chunk_index,
         )
-        for result in results
+        for result in context.evidence
     ]
 
     return RagAnswerResponse(
