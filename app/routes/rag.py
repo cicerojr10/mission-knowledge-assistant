@@ -9,8 +9,11 @@ from app.schemas import (
     RagAnswerResponse,
     RagSourceResponse,
 )
+from app.services.answerability import assess_answerability
 from app.services.context_builder import build_rag_context
+from app.services.generator_provider import get_generator
 from app.services.hybrid_search import search_chunks_hybrid
+from app.services.rag_generation import generate_if_allowed
 
 
 router = APIRouter(prefix="/rag", tags=["rag"])
@@ -50,8 +53,33 @@ def answer_question(
         for result in context.evidence
     ]
 
+    decision = assess_answerability(context)
+
+    if not decision.can_generate:
+        return RagAnswerResponse(
+            answer=None,
+            abstained=True,
+            sources=sources,
+        )
+
+    generator = get_generator()
+
+    generation = generate_if_allowed(
+        decision=decision,
+        generator=generator,
+        question=payload.question,
+        context=context.text,
+    )
+
+    if generation is None:
+        return RagAnswerResponse(
+            answer=None,
+            abstained=True,
+            sources=sources,
+        )
+
     return RagAnswerResponse(
-        answer=None,
-        abstained=True,
+        answer=generation.text,
+        abstained=False,
         sources=sources,
     )
