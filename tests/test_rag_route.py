@@ -215,3 +215,108 @@ def test_rag_answer_uses_context_evidence_as_sources(
             "chunk_index": 1,
         }
     ]
+
+def test_rag_answer_generates_when_answerability_allows(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=701,
+            content="Selected authorized evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=801,
+            title="Selected document",
+        ),
+    )
+
+    fake_generator = SimpleNamespace()
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted authorized context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return SimpleNamespace(
+            should_abstain=False,
+            can_generate=True,
+            reason="semantic_evaluation_passed",
+        )
+
+    def fake_get_generator():
+        return fake_generator
+
+    def fake_generate_if_allowed(
+        decision,
+        generator,
+        question,
+        context,
+    ):
+        assert decision.can_generate is True
+        assert generator is fake_generator
+        assert question == "What happened?"
+        assert context == "Formatted authorized context."
+
+        return SimpleNamespace(
+            text="Generated answer.",
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_generator",
+        fake_get_generator,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "generate_if_allowed",
+        fake_generate_if_allowed,
+        raising=False,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "What happened?",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "answer": "Generated answer.",
+        "abstained": False,
+        "sources": [
+            {
+                "chunk_id": "701",
+                "document_id": "801",
+                "document_title": "Selected document",
+                "content": "Selected authorized evidence.",
+                "chunk_index": 0,
+            }
+        ],
+    }
