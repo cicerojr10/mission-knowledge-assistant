@@ -320,3 +320,151 @@ def test_rag_answer_generates_when_answerability_allows(
             }
         ],
     }
+
+def test_rag_answer_runs_semantic_evaluation_before_generation(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=901,
+            content="Authorized semantic evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=902,
+            title="Semantic document",
+        ),
+    )
+
+    initial_decision = SimpleNamespace(
+        should_abstain=False,
+        can_generate=False,
+        reason="semantic_evaluation_required",
+    )
+
+    semantic_decision = SimpleNamespace(
+        should_abstain=False,
+        can_generate=True,
+        reason="semantic_evaluation_passed",
+    )
+
+    fake_evaluator = SimpleNamespace()
+    fake_generator = SimpleNamespace()
+
+    captured: dict[str, object] = {}
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted semantic context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return initial_decision
+
+    def fake_get_semantic_answerability_evaluator():
+        captured["evaluator_resolved"] = True
+        return fake_evaluator
+
+    def fake_evaluate_semantic_answerability(
+        evaluator,
+        question,
+        context,
+    ):
+        captured["evaluator"] = evaluator
+        captured["question"] = question
+        captured["context"] = context
+
+        return semantic_decision
+
+    def fake_get_generator():
+        return fake_generator
+
+    def fake_generate_if_allowed(
+        decision,
+        generator,
+        question,
+        context,
+    ):
+        captured["generation_decision"] = decision
+
+        return SimpleNamespace(
+            text="Semantically grounded answer.",
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_semantic_answerability_evaluator",
+        fake_get_semantic_answerability_evaluator,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "evaluate_semantic_answerability",
+        fake_evaluate_semantic_answerability,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_generator",
+        fake_get_generator,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "generate_if_allowed",
+        fake_generate_if_allowed,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "What does the evidence support?",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert captured["evaluator_resolved"] is True
+    assert captured["evaluator"] is fake_evaluator
+    assert captured["question"] == (
+        "What does the evidence support?"
+    )
+    assert captured["context"] == (
+        "Formatted semantic context."
+    )
+    assert captured["generation_decision"] is semantic_decision
+
+    assert response.json() == {
+        "answer": "Semantically grounded answer.",
+        "abstained": False,
+        "sources": [
+            {
+                "chunk_id": "901",
+                "document_id": "902",
+                "document_title": "Semantic document",
+                "content": "Authorized semantic evidence.",
+                "chunk_index": 0,
+            }
+        ],
+    }
