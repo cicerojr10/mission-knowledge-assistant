@@ -14,6 +14,12 @@ from app.services.context_builder import build_rag_context
 from app.services.generator_provider import get_generator
 from app.services.hybrid_search import search_chunks_hybrid
 from app.services.rag_generation import generate_if_allowed
+from app.services.semantic_answerability import (
+    evaluate_semantic_answerability,
+)
+from app.services.semantic_answerability_provider import (
+    get_semantic_answerability_evaluator,
+)
 
 
 router = APIRouter(prefix="/rag", tags=["rag"])
@@ -54,6 +60,16 @@ def answer_question(
     ]
 
     decision = assess_answerability(context)
+
+    if decision.reason == "semantic_evaluation_required":
+        evaluator = get_semantic_answerability_evaluator()
+
+        if evaluator is not None:
+            decision = evaluate_semantic_answerability(
+                evaluator=evaluator,
+                question=payload.question,
+                context=context.text,
+            )
 
     if not decision.can_generate:
         return RagAnswerResponse(
