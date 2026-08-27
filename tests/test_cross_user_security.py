@@ -1,8 +1,11 @@
-﻿import pytest
+﻿from types import SimpleNamespace
+
+import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlmodel import Session, delete, select
 
+import app.routes.rag as rag_route
 import app.services.semantic_search as semantic_search_service
 from app.config import settings
 from app.database import engine
@@ -237,3 +240,108 @@ def test_hybrid_route_isolates_users_before_rank_fusion(
     assert len(results) == 1
     assert int(results[0]["document_id"]) == first_document_id
     assert int(results[0]["document_id"]) != second_document_id
+
+
+def test_rag_answer_keeps_other_user_content_out_of_context_and_sources(
+    monkeypatch,
+):
+    first_headers = get_auth_headers_for_user(
+        "rag-first@example.com"
+    )
+    second_headers = get_auth_headers_for_user(
+        "rag-second@example.com"
+    )
+
+    first_document_id = create_document(
+        first_headers,
+        title="Allowed RAG document",
+        content="shared-keyword allowed RAG evidence.",
+    )
+    second_document_id = create_document(
+        second_headers,
+        title="Forbidden RAG document",
+        content="shared-keyword forbidden RAG evidence.",
+    )
+
+    set_document_embedding(
+        first_document_id,
+        create_vector(0.8, 0.6),
+    )
+    set_document_embedding(
+        second_document_id,
+        create_vector(1.0),
+    )
+
+    monkeypatch.setattr(
+        semantic_search_service,
+        "generate_embedding",
+        lambda query: create_vector(1.0),
+    )
+
+    captured: dict[str, object] = {}
+
+    fake_evaluator = SimpleNamespace()
+
+    def fake_get_semantic_answerability_evaluator():
+        return fake_evaluator
+
+    def fake_evaluate_semantic_answerability(
+        evaluator,
+        question,
+        context,
+    ):
+        captured["evaluator"] = evaluator
+        captured["question"] = question
+        captured["context"] = context
+
+        return SimpleNamespace(
+            should_abstain=True,
+            can_generate=False,
+            reason="semantic_evaluation_failed",
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "get_semantic_answerability_evaluator",
+        fake_get_semantic_answerability_evaluator,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "evaluate_semantic_answerability",
+        fake_evaluate_semantic_answerability,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=first_headers,
+        json={
+            "question": "shared-keyword",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert captured["evaluator"] is fake_evaluator
+    assert captured["question"] == "shared-keyword"
+
+    context = str(captured["context"])
+
+    assert "allowed RAG evidence" in context
+    assert "forbidden RAG evidence" not in context
+    assert "Forbidden RAG document" not in context
+
+    body = response.json()
+
+    assert body["answer"] is None
+    assert body["abstained"] is True
+
+    assert len(body["sources"]) == 1
+
+    source = body["sources"][0]
+
+    assert int(source["document_id"]) == first_document_id
+    assert int(source["document_id"]) != second_document_id
+    assert source["document_title"] == "Allowed RAG document"
+    assert source["content"] == (
+        "shared-keyword allowed RAG evidence."
+    )
