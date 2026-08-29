@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.database import get_session
@@ -13,6 +13,7 @@ from app.services.answerability import assess_answerability
 from app.services.context_builder import build_rag_context
 from app.services.generator_provider import get_generator
 from app.services.hybrid_search import search_chunks_hybrid
+from app.services.provider_errors import ProviderUnavailableError
 from app.services.rag_generation import generate_if_allowed
 from app.services.semantic_answerability import (
     evaluate_semantic_answerability,
@@ -23,6 +24,15 @@ from app.services.semantic_answerability_provider import (
 
 
 router = APIRouter(prefix="/rag", tags=["rag"])
+
+
+def raise_provider_unavailable(
+    exc: ProviderUnavailableError,
+) -> None:
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="RAG provider is temporarily unavailable.",
+    ) from exc
 
 
 @router.post(
@@ -62,14 +72,20 @@ def answer_question(
     decision = assess_answerability(context)
 
     if decision.reason == "semantic_evaluation_required":
-        evaluator = get_semantic_answerability_evaluator()
+        try:
+            evaluator = get_semantic_answerability_evaluator()
+        except ProviderUnavailableError as exc:
+            raise_provider_unavailable(exc)
 
         if evaluator is not None:
-            decision = evaluate_semantic_answerability(
-                evaluator=evaluator,
-                question=payload.question,
-                context=context.text,
-            )
+            try:
+                decision = evaluate_semantic_answerability(
+                    evaluator=evaluator,
+                    question=payload.question,
+                    context=context.text,
+                )
+            except ProviderUnavailableError as exc:
+                raise_provider_unavailable(exc)
 
     if not decision.can_generate:
         return RagAnswerResponse(
@@ -78,14 +94,20 @@ def answer_question(
             sources=sources,
         )
 
-    generator = get_generator()
+    try:
+        generator = get_generator()
+    except ProviderUnavailableError as exc:
+        raise_provider_unavailable(exc)
 
-    generation = generate_if_allowed(
-        decision=decision,
-        generator=generator,
-        question=payload.question,
-        context=context.text,
-    )
+    try:
+        generation = generate_if_allowed(
+            decision=decision,
+            generator=generator,
+            question=payload.question,
+            context=context.text,
+        )
+    except ProviderUnavailableError as exc:
+        raise_provider_unavailable(exc)
 
     if generation is None:
         return RagAnswerResponse(

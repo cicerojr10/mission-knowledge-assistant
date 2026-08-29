@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -468,3 +468,340 @@ def test_rag_answer_runs_semantic_evaluation_before_generation(
             }
         ],
     }
+
+
+def test_rag_answer_returns_503_when_generator_provider_is_unavailable(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=1001,
+            content="Authorized evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=1002,
+            title="Authorized document",
+        ),
+    )
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted authorized context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return SimpleNamespace(
+            should_abstain=False,
+            can_generate=True,
+            reason="semantic_evaluation_passed",
+        )
+
+    def fake_get_generator():
+        raise rag_route.ProviderUnavailableError(
+            "internal provider configuration detail"
+    )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_generator",
+        fake_get_generator,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "What happened?",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "RAG provider is temporarily unavailable."
+    }
+    assert (
+        "internal provider configuration detail"
+        not in response.text
+    )
+
+
+def test_rag_answer_returns_503_when_generation_provider_fails(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=1101,
+            content="Authorized evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=1102,
+            title="Authorized document",
+        ),
+    )
+
+    fake_generator = SimpleNamespace()
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted authorized context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return SimpleNamespace(
+            should_abstain=False,
+            can_generate=True,
+            reason="semantic_evaluation_passed",
+        )
+
+    def fake_get_generator():
+        return fake_generator
+
+    def fake_generate_if_allowed(
+        decision,
+        generator,
+        question,
+        context,
+    ):
+        raise rag_route.ProviderUnavailableError(
+            "internal upstream provider failure"
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_generator",
+        fake_get_generator,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "generate_if_allowed",
+        fake_generate_if_allowed,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "What happened?",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "RAG provider is temporarily unavailable."
+    }
+    assert (
+        "internal upstream provider failure"
+        not in response.text
+    )
+
+
+def test_rag_answer_returns_503_when_semantic_provider_is_unavailable(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=1201,
+            content="Authorized semantic evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=1202,
+            title="Authorized semantic document",
+        ),
+    )
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted semantic context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return SimpleNamespace(
+            should_abstain=False,
+            can_generate=False,
+            reason="semantic_evaluation_required",
+        )
+
+    def fake_get_semantic_answerability_evaluator():
+        raise rag_route.ProviderUnavailableError(
+            "internal semantic provider failure"
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_semantic_answerability_evaluator",
+        fake_get_semantic_answerability_evaluator,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "Is this answerable?",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "RAG provider is temporarily unavailable."
+    }
+    assert (
+        "internal semantic provider failure"
+        not in response.text
+    )
+
+
+def test_rag_answer_returns_503_when_semantic_evaluation_fails(
+    monkeypatch,
+):
+    headers = get_auth_headers()
+
+    selected_result = SimpleNamespace(
+        chunk=SimpleNamespace(
+            id=1301,
+            content="Authorized semantic evidence.",
+            chunk_index=0,
+        ),
+        document=SimpleNamespace(
+            id=1302,
+            title="Authorized semantic document",
+        ),
+    )
+
+    fake_evaluator = SimpleNamespace()
+
+    def fake_search_chunks_hybrid(**kwargs):
+        return [selected_result]
+
+    def fake_build_rag_context(results):
+        return SimpleNamespace(
+            text="Formatted semantic context.",
+            evidence=(selected_result,),
+        )
+
+    def fake_assess_answerability(context):
+        return SimpleNamespace(
+            should_abstain=False,
+            can_generate=False,
+            reason="semantic_evaluation_required",
+        )
+
+    def fake_get_semantic_answerability_evaluator():
+        return fake_evaluator
+
+    def fake_evaluate_semantic_answerability(
+        evaluator,
+        question,
+        context,
+    ):
+        raise rag_route.ProviderUnavailableError(
+            "internal semantic evaluation failure"
+        )
+
+    monkeypatch.setattr(
+        rag_route,
+        "search_chunks_hybrid",
+        fake_search_chunks_hybrid,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "build_rag_context",
+        fake_build_rag_context,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "assess_answerability",
+        fake_assess_answerability,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "get_semantic_answerability_evaluator",
+        fake_get_semantic_answerability_evaluator,
+    )
+    monkeypatch.setattr(
+        rag_route,
+        "evaluate_semantic_answerability",
+        fake_evaluate_semantic_answerability,
+    )
+
+    response = client.post(
+        "/rag/answer",
+        headers=headers,
+        json={
+            "question": "Is this answerable?",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "RAG provider is temporarily unavailable."
+    }
+    assert (
+        "internal semantic evaluation failure"
+        not in response.text
+    )
