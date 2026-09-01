@@ -206,6 +206,7 @@ def test_rag_answer_uses_context_evidence_as_sources(
     ]
 
     assert response.json()["answer"] is None
+    assert response.json()["abstained"] is True
     assert response.json()["sources"] == [
         {
             "chunk_id": "502",

@@ -365,34 +365,36 @@ problema
 
 ### BLOCO 1 — Validação Controlada do Pipeline RAG
 
-Objetivo:
+Status: **concluído**
 
-Consolidar o comportamento do pipeline antes de integrar um provider real.
+Resultado:
 
-Matriz mínima:
+Os cinco comportamentos definidos para o bloco possuem evidência automatizada explícita:
 
 1. sem contexto autorizado → abstention;
-2. contexto existente sem avaliação semântica → abstention;
+2. contexto sem decisão semântica suficiente → abstention + sources;
 3. decisão positiva controlada → generation + sources;
 4. provider indisponível → HTTP 503;
-5. evidência cross-user → nunca entra no contexto ou sources.
+5. evidência cross-user → excluída do contexto e das sources.
 
-Próxima ação:
+Gap encontrado:
 
-```text
-inspecionar testes existentes
-↓
-mapear contra a matriz
-↓
-identificar gaps
-↓
-implementar somente o necessário
-↓
-validar
-↓
-documentar
-```
+Foi adicionada uma assertion explícita de:
 
-Plano estratégico:
+`abstained is True`
 
-`docs/05_PLANO_MESTRE_MKA.md`
+ao teste de contexto com sources.
+
+Nenhuma alteração de comportamento em código de produção foi necessária.
+
+Relatório:
+
+`docs/rag-block-01-controlled-validation.md`
+
+### Próximo bloco
+
+**BLOCO 2 — Evaluation Harness**
+
+Objetivo:
+
+Criar uma avaliação reproduzível sobre dataset fixo, separando testes de software de avaliação de qualidade semântica.
