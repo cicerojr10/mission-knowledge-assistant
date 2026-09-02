@@ -10,6 +10,14 @@ class EvaluationCategory(StrEnum):
 
 
 @dataclass(frozen=True)
+class EvaluationDocument:
+    key: str
+    owner_key: str
+    title: str
+    content: str
+
+
+@dataclass(frozen=True)
 class EvaluationCase:
     id: str
     category: EvaluationCategory
