@@ -33,6 +33,7 @@ def load_evaluation_cases(
                     category=EvaluationCategory(
                         data["category"]
                     ),
+                    owner_key=data["owner_key"],
                     question=data["question"],
                     expected_abstained=data[
                         "expected_abstained"

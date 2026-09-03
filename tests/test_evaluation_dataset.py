@@ -11,9 +11,7 @@ def test_load_evaluation_cases():
     with TemporaryDirectory(
         dir=Path(__file__).resolve().parent
     ) as temp_dir:
-        dataset_path = (
-            Path(temp_dir) / "cases.jsonl"
-        )
+        dataset_path = Path(temp_dir) / "cases.jsonl"
 
         dataset_path.write_text(
             "\n".join(
@@ -21,6 +19,7 @@ def test_load_evaluation_cases():
                     (
                         '{"id":"case-001",'
                         '"category":"answerable",'
+                        '"owner_key":"primary",'
                         '"question":"What does the document say?",'
                         '"expected_abstained":false,'
                         '"expected_document_keys":["doc-a"],'
@@ -30,6 +29,7 @@ def test_load_evaluation_cases():
                     (
                         '{"id":"case-002",'
                         '"category":"unanswerable",'
+                        '"owner_key":"primary",'
                         '"question":"What is not documented?",'
                         '"expected_abstained":true,'
                         '"expected_document_keys":[],'
@@ -53,6 +53,7 @@ def test_load_evaluation_cases():
         first_case.category
         == EvaluationCategory.ANSWERABLE
     )
+    assert first_case.owner_key == "primary"
     assert first_case.expected_abstained is False
     assert first_case.expected_document_keys == (
         "doc-a",
@@ -69,6 +70,7 @@ def test_load_evaluation_cases():
         second_case.category
         == EvaluationCategory.UNANSWERABLE
     )
+    assert second_case.owner_key == "primary"
     assert second_case.expected_abstained is True
     assert second_case.reference_answer is None
 
@@ -77,14 +79,13 @@ def test_load_evaluation_cases_reports_invalid_line():
     with TemporaryDirectory(
         dir=Path(__file__).resolve().parent
     ) as temp_dir:
-        dataset_path = (
-            Path(temp_dir) / "cases.jsonl"
-        )
+        dataset_path = Path(temp_dir) / "cases.jsonl"
 
         dataset_path.write_text(
             (
                 '{"id":"case-001",'
                 '"category":"invalid-category",'
+                '"owner_key":"primary",'
                 '"question":"Question?",'
                 '"expected_abstained":false}'
             ),
@@ -93,7 +94,10 @@ def test_load_evaluation_cases_reports_invalid_line():
 
         with pytest.raises(
             ValueError,
-            match="Invalid evaluation case at line 1.",
+            match=(
+                "Invalid evaluation case "
+                "at line 1."
+            ),
         ):
             load_evaluation_cases(
                 dataset_path
