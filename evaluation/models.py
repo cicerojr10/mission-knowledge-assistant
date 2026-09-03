@@ -44,3 +44,13 @@ class EvaluationResult:
     abstention_matches: bool
     expected_documents_found: bool
     forbidden_documents_absent: bool
+
+
+@dataclass(frozen=True)
+class EvaluationSummary:
+    total_cases: int
+    passed_cases: int
+    pass_rate: float
+    abstention_match_rate: float
+    expected_documents_found_rate: float
+    forbidden_documents_absent_rate: float
