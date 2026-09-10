@@ -1,19 +1,21 @@
-﻿# ESTADO ATUAL DO MKA
+# ESTADO ATUAL DO MKA
 
-**Última atualização:** 31/08/2026
+**Última atualização:** 09/09/2026
 **Fonte de verdade técnica:** repositório Git
 
 ---
 
 ## 1. Baseline confirmado
 
-- Main: `f30c24d`
-- Último merge: PR #48 — RAG Day 10 Provider Failures
-- Commit funcional: `b775552`
-- Branch atual: `rag-block-01-controlled-validation`
+- Main: `b4b1b50`
+- Último merge: PR #49 — RAG Block 01 Controlled Validation
+- Branch atual: `rag-block-02-evaluation-harness`
+- Base documental da branch antes do fechamento final: `37f25cc`
 - Alembic: `1b2ec7d5f630 (head)`
-- Testes: `124 passed, 2 warnings`
-- Working tree antes do novo bloco: `clean`
+- Testes: `147 passed, 2 warnings`
+- Evaluation específica: `23 passed`
+- Dataset atual: `50 casos`
+- Corpus de evaluation atual: `18 documentos`
 
 ---
 
@@ -61,7 +63,8 @@ Nenhum desses warnings bloqueia o trabalho atual.
 ### Retrieval / IA
 
 - sentence-transformers
-- embeddings locais
+- `sentence-transformers/all-MiniLM-L6-v2`
+- embeddings locais de 384 dimensões
 - pgvector
 - busca textual
 - busca semântica
@@ -105,7 +108,7 @@ Autorização decide acesso.
 
 ## 5. Retrieval
 
-Status: **implementado**
+Status: **implementado e com baseline de evaluation**
 
 Existem:
 
@@ -113,6 +116,7 @@ Existem:
 - semantic retrieval;
 - hybrid retrieval;
 - `top_k`;
+- `max_distance`;
 - RRF;
 - ownership filtering.
 
@@ -130,6 +134,31 @@ Filtrar antes do ranking protege:
 
 1. confidencialidade;
 2. correção do retrieval.
+
+Baseline controlada atual:
+
+```text
+18 documentos
+50 casos
+```
+
+Resultados:
+
+```text
+top_k=1
+expected_case_hit@1 = 92.59%
+expected_document_recall@1 = 92.59%
+forbidden_document_absence = 100.00%
+
+top_k=5
+expected_case_hit@5 = 100.00%
+expected_document_recall@5 = 100.00%
+forbidden_document_absence = 100.00%
+```
+
+Essas métricas pertencem ao benchmark controlado versionado.
+
+Não representam produção.
 
 ---
 
@@ -222,6 +251,8 @@ Portanto:
 - o comportamento default permanece conservador;
 - caminhos positivos são atualmente demonstrados por testes controlados.
 
+O Bloco 2 não mede ainda a qualidade real dessa camada.
+
 ---
 
 ## 10. Generator Boundary
@@ -251,13 +282,20 @@ Caso contrário, o sistema se abstém.
 
 ---
 
-## 12. Segurança cross-user no RAG
+## 12. Segurança cross-user no RAG e retrieval
 
-Existe teste controlado mostrando que uma evidência pertencente a outro usuário, mesmo sendo semanticamente mais forte:
+Existe evidência automatizada de que evidência pertencente a outro usuário:
 
 - não entra no contexto;
 - não entra nas sources;
 - não consome o `top_k` autorizado.
+
+No benchmark ampliado do Bloco 2:
+
+```text
+10 casos cross-user
+forbidden_document_absence = 100%
+```
 
 Isso é evidência de experimento controlado.
 
@@ -298,16 +336,135 @@ Não existe captura ampla de `Exception` ou `RuntimeError` para mascarar bugs ge
 
 ---
 
-## 14. O que ainda NÃO está implementado
+## 14. Evaluation Harness
+
+Status: **concluído**
+
+Estrutura:
+
+```text
+evaluation/
+├── corpus.py
+├── dataset.py
+├── metrics.py
+├── models.py
+├── retrieval_executor.py
+├── retrieval_metrics.py
+├── run_retrieval.py
+├── runner.py
+└── data/
+    ├── cases.jsonl
+    └── corpus.jsonl
+```
+
+Separação adotada:
+
+```text
+tests/
+→ contratos e regressões do software
+
+evaluation/
+→ medição de comportamento sobre dataset fixo
+```
+
+Dataset atual:
+
+| Categoria | Casos |
+|---|---:|
+| Answerable | 20 |
+| Unanswerable | 13 |
+| Cross-user | 10 |
+| Difficult | 7 |
+| **Total** | **50** |
+
+Corpus:
+
+```text
+18 documentos
+```
+
+---
+
+## 15. Retrieval Evaluation observada
+
+### top_k=1
+
+```text
+scored_cases = 37
+scored_pass_rate = 94.59%
+expected_case_hit@1 = 92.59%
+expected_document_recall@1 = 92.59%
+forbidden_document_absence = 100.00%
+```
+
+Dos 27 casos com documento esperado:
+
+```text
+25/27
+→ documento esperado em rank 1
+```
+
+Falhas de rank 1:
+
+```text
+eval-003
+esperado: rag-abstention
+observado rank 1: sources-provenance
+
+eval-008
+esperado: rag-abstention
+observado rank 1: sources-provenance
+```
+
+### top_k=5
+
+```text
+scored_pass_rate = 100.00%
+expected_case_hit@5 = 100.00%
+expected_document_recall@5 = 100.00%
+forbidden_document_absence = 100.00%
+```
+
+Posições dos dois casos anteriores:
+
+```text
+eval-003
+rag-abstention → rank 2
+
+eval-008
+rag-abstention → rank 3
+```
+
+Diagnóstico:
+
+```text
+evidência esperada estava presente
+↓
+outro documento semanticamente próximo ficou acima
+↓
+problema observado é principalmente de ranking
+```
+
+Nenhum tuning foi feito para esconder essas falhas depois da medição.
+
+Relatório:
+
+`docs/rag-block-02-evaluation-harness.md`
+
+---
+
+## 16. O que ainda NÃO está implementado ou medido
 
 Ainda faltam:
 
 - provider LLM real;
 - semantic evaluator real;
-- evaluation harness;
-- dataset formal de evaluation;
-- métricas reproduzíveis do RAG;
+- avaliação separada de retrieval vs generation;
 - groundedness medido;
+- qualidade real de geração;
+- claim-level validation;
+- avaliação formal em português/cross-language;
+- benchmark com documentos multi-chunk;
 - observabilidade final;
 - CI/CD final;
 - deploy demonstrável;
@@ -319,7 +476,7 @@ Não afirmar que o sistema está production-ready.
 
 ---
 
-## 15. Narrativa profissional
+## 17. Narrativa profissional
 
 Usar:
 
@@ -332,13 +489,13 @@ Não usar:
 - sistema production-ready;
 - segurança comprovada em produção.
 
+As métricas do projeto devem sempre carregar o contexto do benchmark em que foram medidas.
+
 ---
 
-## 16. Modelo de trabalho atual
+## 18. Modelo de trabalho atual
 
-A partir de 31/08/2026, a unidade principal deixa de ser micro-"Days".
-
-Usamos:
+A unidade principal é:
 
 ```text
 BLOCO DE ENTREGA
@@ -361,9 +518,7 @@ problema
 
 ---
 
-## 17. Bloco atual
-
-### BLOCO 1 — Validação Controlada do Pipeline RAG
+## 19. BLOCO 1 — Validação Controlada do Pipeline RAG
 
 Status: **concluído**
 
@@ -377,24 +532,83 @@ Os cinco comportamentos definidos para o bloco possuem evidência automatizada e
 4. provider indisponível → HTTP 503;
 5. evidência cross-user → excluída do contexto e das sources.
 
-Gap encontrado:
-
-Foi adicionada uma assertion explícita de:
-
-`abstained is True`
-
-ao teste de contexto com sources.
-
-Nenhuma alteração de comportamento em código de produção foi necessária.
-
 Relatório:
 
 `docs/rag-block-01-controlled-validation.md`
 
-### Próximo bloco
+---
 
-**BLOCO 2 — Evaluation Harness**
+## 20. BLOCO 2 — Evaluation Harness
+
+Status: **concluído**
+
+Entregas principais:
+
+- dataset versionado;
+- corpus versionado;
+- 50 casos;
+- 18 documentos;
+- runner;
+- métricas;
+- segmentação por categoria;
+- executor de retrieval;
+- PostgreSQL real;
+- pgvector real;
+- embeddings reais;
+- hybrid retrieval real;
+- baseline `top_k=1`;
+- baseline `top_k=5`;
+- diagnóstico de ranking;
+- casos cross-user;
+- testes de integridade do dataset;
+- relatório técnico.
+
+Testes:
+
+```text
+147 passed
+2 warnings
+```
+
+Resultado principal:
+
+```text
+Hit@1 / Recall@1 = 92.59%
+Hit@5 / Recall@5 = 100.00%
+Forbidden document absence = 100.00%
+```
+
+Esses resultados são de benchmark controlado.
+
+---
+
+## 21. Próximo bloco
+
+### BLOCO 3 — Retrieval vs Generation Evaluation
 
 Objetivo:
 
-Criar uma avaliação reproduzível sobre dataset fixo, separando testes de software de avaliação de qualidade semântica.
+Separar falhas por camada.
+
+```text
+retrieval
+↓
+context
+↓
+answerability
+↓
+generation
+↓
+answer + sources
+```
+
+Próxima pergunta técnica:
+
+```text
+quando uma resposta falha,
+em qual camada ocorreu a falha?
+```
+
+O próximo bloco não deve introduzir tecnologias aleatórias.
+
+Ele deve usar o harness já construído para tornar os erros do pipeline observáveis e classificáveis.

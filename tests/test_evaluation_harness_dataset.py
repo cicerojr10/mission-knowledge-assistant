@@ -30,7 +30,7 @@ def controlled_executor(
     )
 
 
-def test_pilot_harness_runs_all_cases():
+def test_evaluation_harness_runs_all_cases():
     cases = load_evaluation_cases(
         DATA_DIRECTORY / "cases.jsonl"
     )
@@ -42,8 +42,8 @@ def test_pilot_harness_runs_all_cases():
 
     summary = summarize_results(results)
 
-    assert summary.total_cases == 8
-    assert summary.passed_cases == 8
+    assert summary.total_cases == 50
+    assert summary.passed_cases == 50
     assert summary.pass_rate == 1.0
     assert summary.abstention_match_rate == 1.0
     assert (
@@ -56,7 +56,7 @@ def test_pilot_harness_runs_all_cases():
     )
 
 
-def test_pilot_harness_preserves_category_counts():
+def test_evaluation_harness_preserves_category_counts():
     cases = load_evaluation_cases(
         DATA_DIRECTORY / "cases.jsonl"
     )
@@ -72,16 +72,16 @@ def test_pilot_harness_preserves_category_counts():
 
     assert summaries[
         EvaluationCategory.ANSWERABLE
-    ].total_cases == 3
+    ].total_cases == 20
 
     assert summaries[
         EvaluationCategory.UNANSWERABLE
-    ].total_cases == 2
+    ].total_cases == 13
 
     assert summaries[
         EvaluationCategory.CROSS_USER
-    ].total_cases == 2
+    ].total_cases == 10
 
     assert summaries[
         EvaluationCategory.DIFFICULT
-    ].total_cases == 1
+    ].total_cases == 7

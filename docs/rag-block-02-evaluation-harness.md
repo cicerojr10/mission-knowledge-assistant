@@ -1,6 +1,6 @@
 # RAG BLOCK 02 — EVALUATION HARNESS
 
-**Status:** em finalização
+**Status:** concluído
 
 **Objetivo:** construir uma avaliação reproduzível baseada em dataset versionado, separando testes de software de avaliação de qualidade.
 
@@ -65,7 +65,7 @@ Nenhuma biblioteca externa específica de evaluation foi adicionada neste bloco.
 
 ---
 
-## 3. Dataset versionado
+## 3. Contrato do dataset
 
 Cada `EvaluationCase` possui atualmente:
 
@@ -89,7 +89,7 @@ Categorias:
 
 O dataset não depende de IDs gerados pelo PostgreSQL.
 
-São utilizadas chaves estáveis como:
+São utilizadas chaves lógicas e estáveis como:
 
 ```text
 security-ownership
@@ -130,7 +130,7 @@ Exemplo cross-user:
 private-secondary
 → owner_key = secondary
 
-eval-006
+consulta cross-user
 → owner_key = primary
 ```
 
@@ -138,9 +138,11 @@ Assim o isolamento não depende de uma convenção implícita.
 
 ---
 
-## 5. Corpus piloto
+## 5. Evolução do corpus
 
-O corpus piloto possui 4 documentos.
+### Piloto
+
+O primeiro corpus possuía 4 documentos:
 
 Usuário `primary`:
 
@@ -152,22 +154,44 @@ Usuário `secondary`:
 
 - `private-secondary`.
 
-Os documentos são pequenos para reduzir variáveis nesta primeira validação.
+Esse corpus pequeno serviu para validar a infraestrutura e a primeira execução real.
 
-Com o chunker atual:
+### Corpus ampliado
+
+O benchmark ampliado possui:
 
 ```text
-chunk_size = 500
-overlap = 50
+18 documentos
 ```
 
-cada documento piloto gera um único chunk.
+Ele inclui documentos relacionados a:
+
+- ownership;
+- autenticação JWT;
+- password hashing;
+- migrations;
+- chunking;
+- semantic retrieval;
+- hybrid retrieval;
+- Context Builder;
+- answerability/abstention;
+- generation gate;
+- provider failures;
+- sources/provenance;
+- evaluation;
+- documentos privados do usuário `secondary`.
+
+Os documentos foram mantidos abaixo do `chunk_size=500` nesta etapa.
+
+Isso foi deliberado: o benchmark aumentou a competição entre documentos sem introduzir ainda a variável de múltiplos chunks por documento.
 
 ---
 
-## 6. Casos piloto
+## 6. Evolução do dataset
 
-O dataset atual possui 8 casos.
+### Piloto
+
+O primeiro dataset possuía 8 casos:
 
 | Categoria | Casos |
 |---|---:|
@@ -177,17 +201,28 @@ O dataset atual possui 8 casos.
 | Difficult | 1 |
 | Total | 8 |
 
-Esse conjunto é um piloto.
+### Dataset ampliado
 
-O plano mestre propõe expansão para aproximadamente 50 casos.
+O dataset atual possui 50 casos:
 
-Portanto:
+| Categoria | Casos | Proporção |
+|---|---:|---:|
+| Answerable | 20 | 40% |
+| Unanswerable | 13 | 26% |
+| Cross-user | 10 | 20% |
+| Difficult | 7 | 14% |
+| **Total** | **50** | **100%** |
+
+A distribuição aproxima a meta de desenho experimental do plano mestre:
 
 ```text
-8 casos
-≠
-dataset final planejado
+40% answerable
+25% unanswerable / abstention
+20% cross-user / security
+15% difficult / ambiguous / noisy
 ```
+
+Os percentuais são desenho do dataset, não resultados do sistema.
 
 ---
 
@@ -207,7 +242,7 @@ EvaluationResult
 summary
 ```
 
-Isso permite usar executores diferentes sem alterar o contrato principal da evaluation.
+Isso permite substituir o executor sem alterar o contrato principal da evaluation.
 
 O harness controlado verifica inicialmente:
 
@@ -232,7 +267,7 @@ A infraestrutura calcula:
 
 Também existe segmentação por categoria.
 
-O objetivo é evitar que uma média global esconda uma categoria fraca.
+Isso evita esconder uma categoria fraca dentro de uma média global.
 
 ---
 
@@ -242,7 +277,7 @@ Antes de executar retrieval real, o pipeline foi validado com um executor contro
 
 Esse executor devolve propositalmente os resultados esperados.
 
-Portanto, resultados de 100% nessa etapa demonstram apenas que:
+Portanto, resultados de 100% no harness controlado demonstram apenas que:
 
 ```text
 dataset
@@ -273,7 +308,7 @@ Responsabilidades:
 6. executar `search_chunks_hybrid()`;
 7. mapear IDs do banco para `document_key`;
 8. preservar ranking;
-9. remover os dados temporários.
+9. remover os dados temporários criados pela execução.
 
 A busca recebe `owner_id` real.
 
@@ -281,9 +316,9 @@ Isso mede retrieval sem adicionar autenticação HTTP como variável do experime
 
 ---
 
-## 11. Embeddings
+## 11. Embeddings e banco
 
-A execução observada utilizou o serviço real existente:
+A execução observada utilizou:
 
 ```text
 sentence-transformers/all-MiniLM-L6-v2
@@ -295,7 +330,13 @@ Dimensão:
 384
 ```
 
-Os vetores foram armazenados no PostgreSQL com pgvector.
+Infraestrutura real utilizada:
+
+- PostgreSQL;
+- pgvector;
+- embeddings reais;
+- hybrid retrieval real;
+- Reciprocal Rank Fusion.
 
 Nenhum novo modelo foi introduzido apenas para melhorar o resultado da evaluation.
 
@@ -318,7 +359,7 @@ Na avaliação real:
 - embeddings são reais;
 - busca híbrida é real.
 
-Isso mantém a separação:
+Separação:
 
 ```text
 pytest
@@ -328,38 +369,69 @@ quality evaluation
 → execução experimental explícita
 ```
 
+Após a expansão do dataset:
+
+```text
+23 testes específicos de evaluation passaram
+147 testes totais passaram
+2 warnings conhecidos
+```
+
 ---
 
-## 13. Comando reproduzível
+## 13. Comandos reproduzíveis
 
-A primeira medição real foi executada com:
+Hit@1:
 
 ```text
 python -m evaluation.run_retrieval --top-k 1
 ```
 
-Configuração:
+Recall@5:
 
 ```text
-top_k = 1
+python -m evaluation.run_retrieval --top-k 5
+```
+
+Configuração comum:
+
+```text
 max_distance = None
 ```
 
-`top_k=1` foi escolhido porque o corpus piloto possui somente três documentos autorizados para o usuário `primary`.
-
-Com esse corpus reduzido, `Recall@5` teria pouco poder discriminativo.
+Com 18 documentos, a comparação entre `top_k=1` e `top_k=5` passa a ser informativa.
 
 ---
 
-## 14. Primeira medição observada
+## 14. Primeira medição — piloto
 
-Configuração do experimento:
+A primeira execução real, ainda sobre 4 documentos e 8 casos, produziu:
+
+| Métrica | Resultado |
+|---|---:|
+| Scored pass rate | 100% |
+| Expected case hit@1 | 100% |
+| Expected document recall@1 | 100% |
+| Forbidden document absence | 100% |
+
+Esse resultado serviu para validar o fluxo experimental.
+
+Ele não foi tratado como benchmark amplo por causa do corpus muito pequeno.
+
+---
+
+## 15. Benchmark ampliado — top_k=1
+
+Configuração:
 
 | Item | Valor |
 |---|---|
-| Documentos | 4 |
-| Casos | 8 |
-| Casos pontuados | 6 |
+| Documentos | 18 |
+| Casos | 50 |
+| Casos pontuados | 37 |
+| Casos com documento esperado | 27 |
+| Casos cross-user | 10 |
+| Casos unanswerable | 13 |
 | `top_k` | 1 |
 | `max_distance` | `None` |
 | Embedding | `all-MiniLM-L6-v2` |
@@ -372,94 +444,145 @@ Resultados observados:
 
 | Métrica | Resultado |
 |---|---:|
-| Scored pass rate | 100% |
-| Expected case hit@1 | 100% |
-| Expected document recall@1 | 100% |
-| Forbidden document absence | 100% |
+| Scored pass rate | 94.59% |
+| Expected case hit@1 | 92.59% |
+| Expected document recall@1 | 92.59% |
+| Forbidden document absence | 100.00% |
 
-Esses números pertencem somente ao experimento piloto descrito acima.
-
----
-
-## 15. Resultados por caso
-
-### eval-001 — answerable
+Em números absolutos:
 
 ```text
-retrieved = security-ownership
-first_expected_rank = 1
-```
+25 de 27 casos com documento esperado
+→ documento esperado em rank 1
 
-### eval-002 — answerable
+10 de 10 casos cross-user
+→ documento proibido ausente
 
-```text
-retrieved = database-migrations
-first_expected_rank = 1
-```
-
-### eval-003 — answerable
-
-```text
-retrieved = rag-abstention
-first_expected_rank = 1
-```
-
-### eval-004 — unanswerable
-
-```text
-retrieved = database-migrations
-status = INFO
-```
-
-### eval-005 — unanswerable
-
-```text
-retrieved = database-migrations
-status = INFO
-```
-
-### eval-006 — cross_user
-
-```text
-retrieved = security-ownership
-private-secondary = absent
-```
-
-### eval-007 — cross_user
-
-```text
-retrieved = security-ownership
-private-secondary = absent
-```
-
-### eval-008 — difficult
-
-```text
-retrieved = rag-abstention
-first_expected_rank = 1
+13 casos unanswerable
+→ informativos para retrieval
 ```
 
 ---
 
-## 16. Achado sobre perguntas unanswerable
+## 16. Falhas observadas em rank 1
 
-Os casos `eval-004` e `eval-005` retornaram `database-migrations` como vizinho mais próximo.
+Dois casos não recuperaram o documento esperado em primeiro lugar.
 
-Isso não foi tratado como falha de abstention.
+### eval-003
 
-A camada de retrieval responde:
+Pergunta relacionada a evidência insuficiente e abstention.
 
-```text
-qual evidência autorizada é mais próxima?
-```
-
-A camada de answerability responde:
+Esperado:
 
 ```text
-essa evidência é suficiente para responder?
+rag-abstention
 ```
 
-Portanto:
+Rank 1 observado:
+
+```text
+sources-provenance
+```
+
+### eval-008
+
+Pergunta sobre contexto relacionado não autorizar automaticamente geração.
+
+Esperado:
+
+```text
+rag-abstention
+```
+
+Rank 1 observado:
+
+```text
+sources-provenance
+```
+
+Os dois resultados mostraram competição semântica entre documentos próximos do mesmo pipeline RAG.
+
+---
+
+## 17. Benchmark ampliado — top_k=5
+
+A mesma evaluation foi executada sem alterar corpus, casos ou algoritmo, mudando apenas:
+
+```text
+top_k = 5
+```
+
+Resultados:
+
+| Métrica | Resultado |
+|---|---:|
+| Scored pass rate | 100.00% |
+| Expected case hit@5 | 100.00% |
+| Expected document recall@5 | 100.00% |
+| Forbidden document absence | 100.00% |
+
+Nos dois casos que falharam em rank 1:
+
+```text
+eval-003
+rag-abstention → rank 2
+
+eval-008
+rag-abstention → rank 3
+```
+
+Portanto, o documento esperado não estava ausente.
+
+Ele estava abaixo de outro documento semanticamente relacionado.
+
+---
+
+## 18. Diagnóstico de retrieval
+
+A comparação entre `@1` e `@5` indica:
+
+```text
+não é principalmente:
+falha de recall
+
+é principalmente:
+competição de ranking entre documentos semanticamente próximos
+```
+
+Resumo:
+
+| Métrica | top_k=1 | top_k=5 |
+|---|---:|---:|
+| Expected document hit | 92.59% | 100.00% |
+| Expected document recall | 92.59% | 100.00% |
+| Forbidden document absence | 100.00% | 100.00% |
+
+Esse diagnóstico é mais útil do que ajustar o benchmark apenas para obter 100% em rank 1.
+
+Nenhum tuning foi feito depois da medição para esconder as duas falhas.
+
+---
+
+## 19. Unanswerable e cross-user
+
+### Unanswerable
+
+Os 13 casos unanswerable retornam vizinhos autorizados porque retrieval procura candidatos semanticamente próximos.
+
+Isso não significa que a pergunta seja respondível.
+
+```text
+retrieval
+→ encontra candidatos autorizados
+
+answerability
+→ decide se a evidência é suficiente
+
+abstention
+→ ocorre quando geração não deve ser autorizada
+```
+
+Assim:
 
 ```text
 retrieval success
@@ -467,23 +590,9 @@ retrieval success
 answerability
 ```
 
-A observação experimental reforça a necessidade de manter as duas responsabilidades separadas.
+### Cross-user
 
----
-
-## 17. Cross-user
-
-Nos casos `eval-006` e `eval-007`, o documento proibido:
-
-```text
-private-secondary
-```
-
-pertencia ao usuário `secondary`.
-
-A consulta foi executada usando o `owner_id` correspondente ao usuário `primary`.
-
-O documento proibido não apareceu em nenhum dos dois resultados.
+Foram executados 10 casos cross-user.
 
 Resultado observado:
 
@@ -491,73 +600,43 @@ Resultado observado:
 forbidden_document_absence = 100%
 ```
 
-Isso é evidência positiva nos casos controlados executados.
+Nenhum documento proibido do usuário `secondary` apareceu nos resultados desses 10 casos.
+
+Isso é evidência positiva dentro do experimento controlado.
 
 Não é prova de segurança de produção.
 
 ---
 
-## 18. Cleanup
-
-Após a execução real foi verificado:
-
-```text
-evaluation_users_remaining=0
-```
-
-Isso confirma que os usuários temporários da execução observada foram removidos.
-
-O executor remove apenas os registros associados ao corpus criado pela própria evaluation.
-
----
-
-## 19. Estado dos testes
-
-Após a implementação do comando e das métricas específicas de retrieval:
-
-```text
-145 passed
-2 warnings
-```
-
-Warnings conhecidos:
-
-1. Starlette TestClient/httpx;
-2. `HTTP_413_REQUEST_ENTITY_TOO_LARGE`.
-
-Esses warnings já existiam e não foram introduzidos pelo Evaluation Harness.
-
----
-
 ## 20. Limitações
 
-### Corpus reduzido
+### Corpus controlado
 
-Existem somente 4 documentos.
+O benchmark possui 18 documentos criados especificamente para evaluation.
 
-### Dataset reduzido
+Não representa uma base documental ampla de produção.
 
-Existem somente 8 casos.
+### Documentos de um único chunk
 
-### Retrieval esperado
+Os documentos foram mantidos abaixo de 500 caracteres.
 
-Somente 4 casos possuem documento esperado para medição direta.
+Portanto, esta etapa não mede competição entre múltiplos chunks do mesmo documento.
 
-### Cross-user
+### Dataset controlado
 
-Existem somente 2 casos cross-user.
-
-### Unanswerable
-
-Os dois casos unanswerable são informativos na avaliação de retrieval.
-
-Eles não medem abstention real.
+Os 50 casos são versionados e úteis para regressão, mas continuam sendo um benchmark controlado.
 
 ### Idioma
 
-O piloto atual está em inglês.
+O dataset atual está em inglês.
 
-Ainda não existe avaliação formal em português ou cross-language.
+Ainda não existe avaliação formal separada para português ou cross-language.
+
+### Unanswerable
+
+Os casos unanswerable são informativos na camada de retrieval.
+
+Eles não medem o comportamento real do semantic answerability evaluator.
 
 ### Generation
 
@@ -573,13 +652,25 @@ Sources continuam representando provenance do contexto.
 
 Não existe claim-level validation.
 
+### Latência
+
+Não foi produzido benchmark formal de latência nesta etapa.
+
+### Produção
+
+Os resultados não demonstram performance, segurança ou confiabilidade de produção.
+
 ---
 
 ## 21. Interpretação correta
 
-É correto afirmar:
+Pode ser afirmado:
 
-> No corpus piloto de 4 documentos e 8 casos, usando `top_k=1`, PostgreSQL, pgvector, embeddings reais do `all-MiniLM-L6-v2` e hybrid retrieval real, todos os casos pontuados atenderam aos critérios definidos para recuperação esperada e isolamento cross-user.
+> Em um benchmark controlado e versionado com 18 documentos e 50 casos, o hybrid retrieval do MKA recuperou o documento esperado em rank 1 em 25 de 27 casos avaliáveis, equivalente a 92,59% de Hit@1/Recall@1. Com top_k=5, os 27 casos continham a evidência esperada, resultando em 100% de Hit@5/Recall@5. Nos 10 casos cross-user, nenhum documento proibido apareceu nos resultados.
+
+Também pode ser afirmado:
+
+> As duas falhas de rank 1 foram casos de competição de ranking: a evidência esperada apareceu nas posições 2 e 3.
 
 Não afirmar:
 
@@ -587,20 +678,25 @@ Não afirmar:
 - RAG possui 100% de precisão;
 - segurança foi comprovada em produção;
 - o sistema está production-ready;
-- o experimento representa uso real amplo.
+- o benchmark representa uso real amplo;
+- groundedness ou geração foram avaliados neste bloco.
 
 ---
 
 ## 22. Status do Bloco 2
 
-Concluído até aqui:
+Status:
+
+```text
+CONCLUÍDO
+```
+
+Entregas:
 
 - modelos de evaluation;
 - corpus loader;
 - dataset loader;
 - dataset versionado;
-- corpus piloto;
-- 8 casos piloto;
 - runner;
 - métricas gerais;
 - segmentação por categoria;
@@ -611,40 +707,52 @@ Concluído até aqui:
 - pgvector real;
 - embeddings reais;
 - hybrid search real;
-- primeira medição observada;
-- cleanup validado.
+- corpus ampliado para 18 documentos;
+- dataset ampliado para 50 casos;
+- 20 casos answerable;
+- 13 casos unanswerable;
+- 10 casos cross-user;
+- 7 casos difficult;
+- benchmark `top_k=1`;
+- benchmark `top_k=5`;
+- diagnóstico de ranking;
+- 147 testes passando;
+- limitações registradas.
 
-Pendente para fechar completamente o Bloco 2:
-
-- expandir o dataset em direção aos 50 casos propostos;
-- consolidar cobertura por categoria;
-- executar novamente a evaluation sobre o conjunto ampliado;
-- registrar a medição ampliada;
-- atualizar o estado oficial do projeto.
+Nenhuma alteração do algoritmo de retrieval foi feita para otimizar os resultados depois de observar o benchmark.
 
 ---
 
-## 23. Próximo passo
+## 23. Próximo bloco
 
-Expandir o dataset de forma controlada.
+### BLOCO 3 — Retrieval vs Generation Evaluation
 
-Meta proposta no plano mestre:
+Objetivo:
+
+Separar falhas por camada do pipeline.
 
 ```text
-50 casos
+retrieval
+↓
+context
+↓
+answerability
+↓
+generation
+↓
+answer + sources
 ```
 
-Cobertura planejada:
+O próximo bloco deve distinguir, de forma mensurável:
 
-| Categoria | Meta |
-|---|---:|
-| Answerable | 40% |
-| Unanswerable / abstention | 25% |
-| Cross-user / security | 20% |
-| Difíceis / ambíguos / ruidosos | 15% |
+- documento correto não recuperado;
+- contexto recuperado, mas insuficiente;
+- decisão de answerability incorreta;
+- geração não fundamentada;
+- abstention correta;
+- provider failure;
+- sources/provenance.
 
-Esses percentuais representam desenho experimental.
+O Bloco 2 encerra a infraestrutura e a baseline de retrieval.
 
-Não são resultados observados.
-
-Depois da expansão, o mesmo executor deverá produzir uma nova medição antes de o Bloco 2 ser considerado concluído.
+Ele não encerra a evaluation completa do RAG.

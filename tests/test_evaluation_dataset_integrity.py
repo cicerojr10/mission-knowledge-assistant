@@ -15,7 +15,7 @@ DATA_DIRECTORY = (
 )
 
 
-def test_pilot_evaluation_dataset_has_expected_shape():
+def test_evaluation_dataset_has_expected_shape():
     documents = load_evaluation_documents(
         DATA_DIRECTORY / "corpus.jsonl"
     )
@@ -23,8 +23,8 @@ def test_pilot_evaluation_dataset_has_expected_shape():
         DATA_DIRECTORY / "cases.jsonl"
     )
 
-    assert len(documents) == 4
-    assert len(cases) == 8
+    assert len(documents) == 18
+    assert len(cases) == 50
 
     categories = Counter(
         case.category
@@ -32,14 +32,14 @@ def test_pilot_evaluation_dataset_has_expected_shape():
     )
 
     assert categories == {
-        EvaluationCategory.ANSWERABLE: 3,
-        EvaluationCategory.UNANSWERABLE: 2,
-        EvaluationCategory.CROSS_USER: 2,
-        EvaluationCategory.DIFFICULT: 1,
+        EvaluationCategory.ANSWERABLE: 20,
+        EvaluationCategory.UNANSWERABLE: 13,
+        EvaluationCategory.CROSS_USER: 10,
+        EvaluationCategory.DIFFICULT: 7,
     }
 
 
-def test_pilot_cases_reference_known_documents():
+def test_evaluation_cases_reference_known_documents():
     documents = load_evaluation_documents(
         DATA_DIRECTORY / "corpus.jsonl"
     )
@@ -61,7 +61,7 @@ def test_pilot_cases_reference_known_documents():
         assert referenced_keys <= document_keys
 
 
-def test_pilot_document_keys_are_unique():
+def test_evaluation_document_keys_are_unique():
     documents = load_evaluation_documents(
         DATA_DIRECTORY / "corpus.jsonl"
     )
@@ -76,7 +76,39 @@ def test_pilot_document_keys_are_unique():
     )
 
 
-def test_cross_user_cases_forbid_secondary_document():
+def test_evaluation_case_ids_are_unique():
+    cases = load_evaluation_cases(
+        DATA_DIRECTORY / "cases.jsonl"
+    )
+
+    case_ids = [
+        case.id
+        for case in cases
+    ]
+
+    assert len(case_ids) == len(
+        set(case_ids)
+    )
+
+
+def test_evaluation_case_owners_exist_in_corpus():
+    documents = load_evaluation_documents(
+        DATA_DIRECTORY / "corpus.jsonl"
+    )
+    cases = load_evaluation_cases(
+        DATA_DIRECTORY / "cases.jsonl"
+    )
+
+    owner_keys = {
+        document.owner_key
+        for document in documents
+    }
+
+    for case in cases:
+        assert case.owner_key in owner_keys
+
+
+def test_cross_user_cases_have_forbidden_documents():
     cases = load_evaluation_cases(
         DATA_DIRECTORY / "cases.jsonl"
     )
@@ -90,11 +122,9 @@ def test_cross_user_cases_forbid_secondary_document():
         )
     ]
 
-    assert len(cross_user_cases) == 2
+    assert len(cross_user_cases) == 10
 
     for case in cross_user_cases:
         assert case.expected_abstained is True
         assert case.expected_document_keys == ()
-        assert case.forbidden_document_keys == (
-            "private-secondary",
-        )
+        assert case.forbidden_document_keys
