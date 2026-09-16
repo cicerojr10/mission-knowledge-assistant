@@ -6,7 +6,10 @@ from sqlmodel import Session, delete
 from app.chunker import split_text
 from app.models import Chunk, Document, User
 from app.services.embeddings import generate_embeddings
-from app.services.hybrid_search import search_chunks_hybrid
+from app.services.hybrid_search import (
+    HybridSearchResult,
+    search_chunks_hybrid,
+)
 from app.services.passwords import hash_password
 from evaluation.models import (
     EvaluationCase,
@@ -25,6 +28,7 @@ class SeededEvaluationCorpus:
 @dataclass(frozen=True)
 class RetrievalObservation:
     document_keys: tuple[str, ...]
+    results: tuple[HybridSearchResult, ...] = ()
 
 
 def seed_evaluation_corpus(
@@ -221,7 +225,8 @@ def execute_retrieval_case(
         document_keys.append(document_key)
 
     return RetrievalObservation(
-        document_keys=tuple(document_keys)
+        document_keys=tuple(document_keys),
+        results=tuple(results),
     )
 
 
