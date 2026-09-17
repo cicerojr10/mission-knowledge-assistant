@@ -236,8 +236,8 @@ def test_unscored_retrieval_keeps_layered_result_not_evaluated():
         == LayerStatus.NOT_EVALUATED
     )
     assert (
-        result.layered.context
-        == LayerStatus.NOT_EVALUATED
+    result.layered.context
+    == LayerStatus.PASS
     )
     assert (
         result.layered.answerability

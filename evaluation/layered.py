@@ -36,82 +36,64 @@ class LayeredEvaluationResult:
 def evaluate_layered_checks(
     checks: LayerEvaluationChecks,
 ) -> LayeredEvaluationResult:
-    if checks.retrieval is None:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.NOT_EVALUATED,
-            context=LayerStatus.NOT_EVALUATED,
-            answerability=LayerStatus.NOT_EVALUATED,
-            generation=LayerStatus.NOT_EVALUATED,
-            first_failure=None,
-        )
+    checks_by_layer = (
+        (
+            EvaluationLayer.RETRIEVAL,
+            checks.retrieval,
+        ),
+        (
+            EvaluationLayer.CONTEXT,
+            checks.context,
+        ),
+        (
+            EvaluationLayer.ANSWERABILITY,
+            checks.answerability,
+        ),
+        (
+            EvaluationLayer.GENERATION,
+            checks.generation,
+        ),
+    )
 
-    if checks.retrieval is False:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.FAIL,
-            context=LayerStatus.BLOCKED,
-            answerability=LayerStatus.BLOCKED,
-            generation=LayerStatus.BLOCKED,
-            first_failure=EvaluationLayer.RETRIEVAL,
-        )
+    statuses: dict[
+        EvaluationLayer,
+        LayerStatus,
+    ] = {}
 
-    if checks.context is None:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.NOT_EVALUATED,
-            answerability=LayerStatus.NOT_EVALUATED,
-            generation=LayerStatus.NOT_EVALUATED,
-            first_failure=None,
-        )
+    first_failure: EvaluationLayer | None = None
+    blocked = False
 
-    if checks.context is False:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.FAIL,
-            answerability=LayerStatus.BLOCKED,
-            generation=LayerStatus.BLOCKED,
-            first_failure=EvaluationLayer.CONTEXT,
-        )
+    for layer, check in checks_by_layer:
+        if blocked:
+            statuses[layer] = LayerStatus.BLOCKED
+            continue
 
-    if checks.answerability is None:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.PASS,
-            answerability=LayerStatus.NOT_EVALUATED,
-            generation=LayerStatus.NOT_EVALUATED,
-            first_failure=None,
-        )
+        if check is None:
+            statuses[layer] = (
+                LayerStatus.NOT_EVALUATED
+            )
+            continue
 
-    if checks.answerability is False:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.PASS,
-            answerability=LayerStatus.FAIL,
-            generation=LayerStatus.BLOCKED,
-            first_failure=EvaluationLayer.ANSWERABILITY,
-        )
+        if check is False:
+            statuses[layer] = LayerStatus.FAIL
+            first_failure = layer
+            blocked = True
+            continue
 
-    if checks.generation is None:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.PASS,
-            answerability=LayerStatus.PASS,
-            generation=LayerStatus.NOT_EVALUATED,
-            first_failure=None,
-        )
-
-    if checks.generation is False:
-        return LayeredEvaluationResult(
-            retrieval=LayerStatus.PASS,
-            context=LayerStatus.PASS,
-            answerability=LayerStatus.PASS,
-            generation=LayerStatus.FAIL,
-            first_failure=EvaluationLayer.GENERATION,
-        )
+        statuses[layer] = LayerStatus.PASS
 
     return LayeredEvaluationResult(
-        retrieval=LayerStatus.PASS,
-        context=LayerStatus.PASS,
-        answerability=LayerStatus.PASS,
-        generation=LayerStatus.PASS,
-        first_failure=None,
+        retrieval=statuses[
+            EvaluationLayer.RETRIEVAL
+        ],
+        context=statuses[
+            EvaluationLayer.CONTEXT
+        ],
+        answerability=statuses[
+            EvaluationLayer.ANSWERABILITY
+        ],
+        generation=statuses[
+            EvaluationLayer.GENERATION
+        ],
+        first_failure=first_failure,
     )

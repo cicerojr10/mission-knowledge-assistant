@@ -108,7 +108,7 @@ def test_generation_can_remain_not_evaluated_without_becoming_failure():
     assert result.first_failure is None
 
 
-def test_missing_context_measurement_keeps_downstream_not_evaluated():
+def test_missing_measurement_does_not_block_later_layers():
     result = evaluate_layered_checks(
         LayerEvaluationChecks(
             retrieval=True,
@@ -119,7 +119,39 @@ def test_missing_context_measurement_keeps_downstream_not_evaluated():
     )
 
     assert result.retrieval == LayerStatus.PASS
-    assert result.context == LayerStatus.NOT_EVALUATED
-    assert result.answerability == LayerStatus.NOT_EVALUATED
-    assert result.generation == LayerStatus.NOT_EVALUATED
+    assert (
+        result.context
+        == LayerStatus.NOT_EVALUATED
+    )
+    assert (
+        result.answerability
+        == LayerStatus.PASS
+    )
+    assert result.generation == LayerStatus.PASS
+    assert result.first_failure is None
+
+
+def test_unscored_retrieval_does_not_block_context():
+    result = evaluate_layered_checks(
+        LayerEvaluationChecks(
+            retrieval=None,
+            context=True,
+            answerability=None,
+            generation=None,
+        )
+    )
+
+    assert (
+        result.retrieval
+        == LayerStatus.NOT_EVALUATED
+    )
+    assert result.context == LayerStatus.PASS
+    assert (
+        result.answerability
+        == LayerStatus.NOT_EVALUATED
+    )
+    assert (
+        result.generation
+        == LayerStatus.NOT_EVALUATED
+    )
     assert result.first_failure is None
