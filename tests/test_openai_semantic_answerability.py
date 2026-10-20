@@ -1,6 +1,12 @@
 from types import SimpleNamespace
 
+import httpx2
 import pytest
+from openai import (
+    APIConnectionError,
+    InternalServerError,
+    RateLimitError,
+)
 
 from app.services.answerability import AnswerabilityDecision
 from app.services.openai_semantic_answerability import (
@@ -48,6 +54,68 @@ class FakeOpenAIClientWithoutParsedOutput:
     def __init__(self):
         self.responses = FakeResponsesWithoutParsedOutput()
 
+
+class FakeResponsesWithConnectionError:
+    def parse(self, **kwargs):
+        request = httpx2.Request(
+            "POST",
+            "https://api.openai.com/v1/responses",
+        )
+
+        raise APIConnectionError(request=request)
+
+
+class FakeOpenAIClientWithConnectionError:
+    def __init__(self):
+        self.responses = FakeResponsesWithConnectionError()
+
+
+class FakeResponsesWithRateLimitError:
+    def parse(self, **kwargs):
+        request = httpx2.Request(
+            "POST",
+            "https://api.openai.com/v1/responses",
+        )
+
+        response = httpx2.Response(
+            status_code=429,
+            request=request,
+        )
+
+        raise RateLimitError(
+            "Rate limit exceeded.",
+            response=response,
+            body=None,
+        )
+
+
+class FakeOpenAIClientWithRateLimitError:
+    def __init__(self):
+        self.responses = FakeResponsesWithRateLimitError()
+
+
+class FakeResponsesWithInternalServerError:
+    def parse(self, **kwargs):
+        request = httpx2.Request(
+            "POST",
+            "https://api.openai.com/v1/responses",
+        )
+
+        response = httpx2.Response(
+            status_code=500,
+            request=request,
+        )
+
+        raise InternalServerError(
+            "Internal server error.",
+            response=response,
+            body=None,
+        )
+
+
+class FakeOpenAIClientWithInternalServerError:
+    def __init__(self):
+        self.responses = FakeResponsesWithInternalServerError()
 
 def test_openai_answerability_passes_question_and_context_to_provider():
     client = FakeOpenAIClient(
@@ -125,6 +193,48 @@ def test_openai_answerability_maps_negative_result_to_abstention():
 def test_openai_answerability_rejects_missing_structured_output():
     evaluator = OpenAISemanticAnswerabilityEvaluator(
         client=FakeOpenAIClientWithoutParsedOutput(),
+        model="test-model",
+    )
+
+    request = SemanticAnswerabilityRequest(
+        question="What was the final contract value?",
+        context="The contract was cancelled.",
+    )
+
+    with pytest.raises(ProviderUnavailableError):
+        evaluator.evaluate(request)
+
+def test_openai_answerability_maps_connection_error_to_provider_error():
+    evaluator = OpenAISemanticAnswerabilityEvaluator(
+        client=FakeOpenAIClientWithConnectionError(),
+        model="test-model",
+    )
+
+    request = SemanticAnswerabilityRequest(
+        question="What was the final contract value?",
+        context="The contract was cancelled.",
+    )
+
+    with pytest.raises(ProviderUnavailableError):
+        evaluator.evaluate(request)
+
+def test_openai_answerability_maps_rate_limit_to_provider_error():
+    evaluator = OpenAISemanticAnswerabilityEvaluator(
+        client=FakeOpenAIClientWithRateLimitError(),
+        model="test-model",
+    )
+
+    request = SemanticAnswerabilityRequest(
+        question="What was the final contract value?",
+        context="The contract was cancelled.",
+    )
+
+    with pytest.raises(ProviderUnavailableError):
+        evaluator.evaluate(request)
+
+def test_openai_answerability_maps_server_error_to_provider_error():
+    evaluator = OpenAISemanticAnswerabilityEvaluator(
+        client=FakeOpenAIClientWithInternalServerError(),
         model="test-model",
     )
 
