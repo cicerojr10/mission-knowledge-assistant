@@ -59,5 +59,12 @@ class Settings(BaseModel):
         le=1440,
     )
 
+    openai_api_key: SecretStr | None = get_optional_secret(
+        "OPENAI_API_KEY"
+    )
+    openai_answerability_model: str | None = (
+        os.getenv("OPENAI_ANSWERABILITY_MODEL")
+        or None
+    )
 
 settings = Settings()

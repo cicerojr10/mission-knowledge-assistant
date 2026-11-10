@@ -10,34 +10,38 @@ O objetivo não é apenas adicionar tecnologias, mas construir e validar cada ca
 
 ## Status atual
 
-**Semana 4 concluída — Retrieval semântico e híbrido**
+**Security Slice concluído — RAG em desenvolvimento**
 
 O backend atualmente possui:
 
-- API REST com FastAPI;
-- persistência com PostgreSQL;
-- modelagem com SQLModel;
-- migrations com Alembic;
-- ambiente local com Docker Compose;
-- cadastro e listagem de documentos;
-- geração automática de chunks;
-- relacionamento `Document -> Chunk`;
-- embeddings persistidos por chunk;
-- busca textual com `ILIKE`;
-- busca semântica com pgvector;
-- filtro opcional de relevância com `max_distance`;
-- busca híbrida com Reciprocal Rank Fusion (RRF);
-- experimentos controlados de comparação entre recuperação textual e vetorial;
-- testes automatizados com Pytest;
-- documentação de decisões arquiteturais e experimentos.
+- API REST com FastAPI e PostgreSQL;
+- modelagem com SQLModel e migrations com Alembic;
+- autenticação com JWT e armazenamento seguro de senhas;
+- autorização e isolamento de documentos por proprietário;
+- criação de documentos e geração de chunks;
+- embeddings persistidos com pgvector;
+- busca textual, semântica e híbrida com RRF;
+- construção de contexto RAG com fontes;
+- mecanismo de abstenção;
+- adapter OpenAI para avaliação semântica de answerability;
+- testes automatizados com banco PostgreSQL isolado.
 
-Estado atual da suíte:
+Última validação local:
 
 ```text
-54 passed
+180 passed, 1 warning
 ```
 
-RAG e geração de respostas com LLM **ainda não fazem parte do estado atual**.
+**Limitações atuais:**
+
+O RAG ainda não possui um gerador de respostas LLM funcional
+integrado de ponta a ponta.
+
+A integração de avaliação semântica com OpenAI foi validada
+com clientes simulados, sem chamadas reais à API.
+
+O projeto é um backend em desenvolvimento e não está
+validado para produção.
 
 ---
 
@@ -363,42 +367,98 @@ Esse resultado também não deve ser generalizado: em bases com múltiplos chunk
 
 ## Testes
 
-A suíte automatizada utiliza Pytest.
+A suíte automatizada utiliza Pytest e PostgreSQL com pgvector.
 
-Para executar:
+Última execução local validada:
+
+```text
+180 passed, 1 warning
+```
+
+A suíte cobre autenticação, autorização, isolamento por proprietário,
+documentos, chunks, retrieval textual, semântico e híbrido,
+construção de contexto RAG, abstenção e adapters de provedores.
+
+Os testes da integração OpenAI utilizam clientes simulados.
+Uma chamada real à API OpenAI ainda não foi validada.
+
+### Banco de testes
+
+Os testes de integração utilizam `mission_knowledge_test`,
+separado do banco local da aplicação (`mission_knowledge`).
+
+O arquivo `tests/conftest.py` configura esse destino antes da
+coleta dos testes e desabilita as credenciais OpenAI no ambiente
+inicial do Pytest.
+
+Os dois bancos ainda compartilham o mesmo usuário PostgreSQL.
+Portanto, esse isolamento não substitui permissões independentes
+nem representa uma configuração de produção.
+
+### Preparação inicial
+
+Com o PostgreSQL do Docker Compose em execução, crie o banco
+de testes uma única vez:
 
 ```powershell
-pytest
+docker compose exec -T postgres psql -U mission_user -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE mission_knowledge_test OWNER mission_user TEMPLATE template0;"
 ```
 
-Estado atual:
+Se o banco já existir, não repita a criação.
 
-```text
-54 passed
+Antes de executar a suíte pela primeira vez, aplique as migrations
+exclusivamente ao banco de testes:
+
+```powershell
+@'
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+
+config = Config("alembic.ini")
+url = make_url(
+    config.get_main_option("sqlalchemy.url")
+).set(database="mission_knowledge_test")
+
+engine = create_engine(url)
+
+with engine.connect() as connection:
+    actual_database = connection.execute(
+        text("SELECT current_database()")
+    ).scalar_one()
+
+engine.dispose()
+
+if actual_database != "mission_knowledge_test":
+    raise RuntimeError(
+        f"Unsafe migration target: {actual_database}"
+    )
+
+config.set_main_option(
+    "sqlalchemy.url",
+    url.render_as_string(hide_password=False),
+)
+
+command.upgrade(config, "head")
+print("Test database migrations applied.")
+'@ | python -
 ```
 
-Os testes cobrem diferentes camadas, incluindo:
+### Execução
 
-- API;
-- documentos;
-- chunking;
-- busca textual;
-- embeddings;
-- busca semântica;
-- threshold;
-- Reciprocal Rank Fusion;
-- serviço de busca híbrida;
-- contrato HTTP da busca híbrida.
+No terminal integrado, com o ambiente virtual ativo:
 
-Também existem scripts de validação end-to-end para testar integrações reais entre:
-
-```text
-modelo de embeddings
-PostgreSQL
-pgvector
-serviços
-FastAPI
+```powershell
+python -m pytest -q
 ```
+
+Os testes de integração podem criar e excluir registros no banco
+`mission_knowledge_test`. Não execute a suíte contra um banco que
+contenha dados que precisem ser preservados.
+
+O aviso de depreciação relacionado à constante HTTP 413 é uma
+limitação conhecida e não bloqueia a execução atual.
 
 ---
 
@@ -525,11 +585,29 @@ Chunking, relação `Document -> Chunk` e busca com `ILIKE`.
 - comparação textual vs. vetorial;
 - busca híbrida com RRF.
 
-### Semana 5 — RAG
 
-Próxima etapa planejada.
+### Semana 5 — RAG (em desenvolvimento)
 
-A arquitetura de geração ainda será definida após o fechamento técnico e a análise de mercado da Semana 4.
+Implementações já realizadas:
+
+- construção de contexto a partir do retrieval autorizado;
+- identificação das fontes utilizadas;
+- mecanismo de abstenção;
+- separação entre avaliação de answerability e geração;
+- adapter OpenAI para avaliação semântica;
+- tratamento de falhas de provedores externos;
+- testes automatizados com clientes simulados.
+
+Pendências:
+
+- integração funcional de um gerador de respostas com LLM;
+- validação controlada com a API OpenAI real;
+- avaliação da qualidade das respostas e da fundamentação nas fontes;
+- medição de custo, latência e comportamento em diferentes cenários.
+
+A implementação atual é incremental e ainda não representa
+um sistema RAG completo ou validado para produção.
+
 
 ### Etapas posteriores
 
@@ -546,7 +624,12 @@ A arquitetura de geração ainda será definida após o fechamento técnico e a 
 
 O Mission Knowledge Assistant **ainda não é um sistema RAG completo**.
 
-O estado atual implementa a camada de backend e retrieval necessária para que essa evolução aconteça de forma controlada.
+O projeto já implementa a base backend, mecanismos de retrieval
+e parte da arquitetura RAG, incluindo construção de contexto,
+fontes, abstenção e avaliação semântica com clientes simulados.
+
+A geração funcional com LLM e a validação ponta a ponta ainda
+estão pendentes.
 
 Atualmente o projeto demonstra:
 
