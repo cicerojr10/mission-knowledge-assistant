@@ -66,5 +66,9 @@ class Settings(BaseModel):
         os.getenv("OPENAI_ANSWERABILITY_MODEL")
         or None
     )
+    openai_generation_model: str | None = (
+        os.getenv("OPENAI_GENERATION_MODEL")
+        or None
+    )
 
 settings = Settings()
