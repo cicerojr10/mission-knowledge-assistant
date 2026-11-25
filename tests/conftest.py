@@ -17,6 +17,7 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 # Prevent unintended real OpenAI calls during tests.
 os.environ["OPENAI_API_KEY"] = ""
 os.environ["OPENAI_ANSWERABILITY_MODEL"] = ""
+os.environ["OPENAI_GENERATION_MODEL"] = ""
 
 from app.database import engine  # noqa: E402
 
